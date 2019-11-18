@@ -1,8 +1,8 @@
 package services
 
 import (
-	"bitbucket.org/softonic-development/homing-pigeon/pkg/readers"
-	"bitbucket.org/softonic-development/homing-pigeon/pkg/writers"
+	"github.com/softonic/homing-pigeon/pkg/readers"
+	"github.com/softonic/homing-pigeon/pkg/writers"
 	"github.com/sarulabs/dingo"
 )
 

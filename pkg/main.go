@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bitbucket.org/softonic-development/homming-pidgeon/pkg/generatedServices/dic"
+	"bitbucket.org/softonic-development/homing-pigeon/pkg/generatedServices/dic"
 	"github.com/sarulabs/dingo"
 )
 

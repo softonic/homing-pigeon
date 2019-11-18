@@ -1,8 +1,8 @@
 package services
 
 import (
-	"bitbucket.org/softonic-development/homming-pidgeon/pkg/readers"
-	"bitbucket.org/softonic-development/homming-pidgeon/pkg/writers"
+	"bitbucket.org/softonic-development/homing-pigeon/pkg/readers"
+	"bitbucket.org/softonic-development/homing-pigeon/pkg/writers"
 	"github.com/sarulabs/dingo"
 )
 
@@ -14,9 +14,5 @@ var Container = []dingo.Def{
 	{
 		Name: "ElasticsearchWriter",
 		Build: &writers.ElasticsearchWriter{},
-		Params: dingo.Params{
-			"FieldA": "test",
-			"FieldB": "value",
-		},
 	},
 }

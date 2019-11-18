@@ -1,4 +1,4 @@
-module bitbucket.org/softonic-development/homming-pidgeon
+module bitbucket.org/softonic-development/homing-pigeon
 
 require (
 	github.com/elliotchance/dingo v1.3.3 // indirect

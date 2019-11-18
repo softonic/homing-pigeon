@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -18,5 +17,6 @@ type writeAdapterMock struct {
 func TestInputNotValid(t *testing.T) {
 	assert := assert.New(t)
 
+	writeAdapterMock.WriteChannel
 	InitAdapter()
 }

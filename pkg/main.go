@@ -10,10 +10,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	inChannel = make(chan string)
-	outChannel = make(chan string)
-	amqpReader := container.GetAmqpReader(inChannel, outChannel)
-	elasticsearchWriter := container.GetElasticsearchWriter(inChannel, outChannel)
+	amqpReader := container.GetAmqpReader()
+	elasticsearchWriter := container.GetElasticsearchWriter()
 
-
+	go amqpReader.Start()
+	elasticsearchWriter.Start()
 }

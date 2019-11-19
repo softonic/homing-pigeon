@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/softonic/homing-pigeon/pkg/generatedServices/dic"
 	"github.com/sarulabs/dingo"
+	"github.com/softonic/homing-pigeon/pkg/generatedServices/dic"
 )
 
 func main() {
@@ -11,8 +11,8 @@ func main() {
 		panic(err)
 	}
 	amqpReader := container.GetAmqpReader()
-	elasticsearchWriter := container.GetElasticsearchWriter()
+	writer := container.GetWriter()
 
 	go amqpReader.Start()
-	elasticsearchWriter.Start()
+	writer.Start()
 }

@@ -16,13 +16,15 @@ type AmqpReader struct {
 func (amqpReader *AmqpReader) Start() {
 	go amqpReader.handleAck()
 	for i := 0; i < 100; i++ {
-		*amqpReader.WriteChannel <- "my message " + strconv.Itoa(i)
+		msg := "my message " + strconv.Itoa(i)
+		fmt.Print("Sending message: " + msg + "\n")
+		*amqpReader.WriteChannel <- msg
 	}
 }
 
 func (amqpReader *AmqpReader) handleAck() {
 	for ack := range *amqpReader.AckChannel {
-		fmt.Print("Acked " + ack)
+		fmt.Print("Acked " + ack + "\n")
 	}
 }
 

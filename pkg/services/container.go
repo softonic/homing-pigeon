@@ -4,6 +4,7 @@ import (
 	"github.com/softonic/homing-pigeon/pkg/readers"
 	"github.com/softonic/homing-pigeon/pkg/writers"
 	"github.com/sarulabs/dingo"
+	"github.com/softonic/homing-pigeon/pkg/writers/adapters"
 )
 
 var Container = []dingo.Def{
@@ -16,11 +17,25 @@ var Container = []dingo.Def{
 		},
 	},
 	{
-		Name: "ElasticsearchWriter",
-		Build: &writers.ElasticsearchWriter{},
+		Name: "Writer",
+		Build: &writers.Writer{},
 		Params: dingo.Params{
 			"WriteChannel": dingo.Service("WriteChannel"),
 			"AckChannel": dingo.Service("AckChannel"),
+			"WriteAdapter": dingo.Service("NopAdapter"),
+		},
+	},
+
+	{
+		Name: "ElasticsearchAdapter",
+		Build: func() (adapters.WriteAdapter, error) {
+			return &adapters.Elasticsearch{}, nil
+		},
+	},
+	{
+		Name: "NopAdapter",
+		Build: func() (adapters.WriteAdapter, error) {
+			return &adapters.Nop{}, nil
 		},
 	},
 	{

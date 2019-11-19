@@ -10,9 +10,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	amqpReader := container.GetAmqpReader()
+	reader := container.GetReader()
 	writer := container.GetWriter()
 
-	go amqpReader.Start()
+	go reader.Start()
 	writer.Start()
 }

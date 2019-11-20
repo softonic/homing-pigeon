@@ -138,7 +138,7 @@ func (wa *Elasticsearch) writeToBuffer(buf *bytes.Buffer, body esAdapter.Elastic
 }
 
 func (wa *Elasticsearch) ShouldProcess(msgs []*messages.Message) bool {
-	return len(msgs) > 20
+	return len(msgs) > 250
 }
 
 func (wa *Elasticsearch) GetTimeoutInMs() int64 {

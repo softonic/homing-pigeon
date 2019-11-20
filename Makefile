@@ -4,5 +4,6 @@ dep: go.mod go.sum
 build: dep
 	dingo -src="./pkg/services" -dest="./pkg/generatedServices"
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/homing-pigeon pkg/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/stress-pigeon pkg/stress.go
 docker-build:
 	docker build -t softonic/homing-pigeon:dev .

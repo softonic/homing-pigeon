@@ -12,7 +12,7 @@ require (
 	github.com/sarulabs/dingo v2.0.0+incompatible
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/testify v1.4.0
-	golang.org/x/sys v0.0.0-20191119195528-f068ffe820e4 // indirect
+	golang.org/x/sys v0.0.0-20191120130536-6bfc516c8699 // indirect
 )
 
 go 1.13

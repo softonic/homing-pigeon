@@ -10,12 +10,6 @@ type Amqp struct {
 	ch *amqp.Channel
 }
 
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-	}
-}
-
 func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	conn, err := amqp.Dial("amqp://guest:guest@rabbit-mq:5672")
 	failOnError(err, "Failed to connect to RabbitMQ")
@@ -55,6 +49,17 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	)
 	failOnError(err, "Failed to declare dead letter binding")
 
+	err = a.ch.ExchangeDeclare(
+		"hello",
+		"fanout",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	failOnError(err, "Failed to declare exchange")
+
 	q, err := a.ch.QueueDeclare(
 		"hello", // name
 		false,   // durable
@@ -65,6 +70,15 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	)
 	failOnError(err, "Failed to declare queue")
 
+	err = a.ch.QueueBind(
+		q.Name,
+		"#",
+		"hello",
+		false,
+		nil,
+	)
+	failOnError(err, "Failed to declare binding")
+
 	msgs, err := a.ch.Consume(
 		q.Name, // queue
 		"",     // consumer
@@ -72,9 +86,12 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
-		nil,    // args
+		nil,
 	)
 	failOnError(err, "Failed to consume")
+
+	err = a.ch.Qos(500, 0, false)
+	failOnError(err, "Failed setting Qos")
 
 	forever := make(chan bool)
 
@@ -89,6 +106,12 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	}()
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 	<-forever
+}
+
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
+	}
 }
 
 func (a *Amqp) HandleAck(ackChannel *chan messages.Ack) {

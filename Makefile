@@ -1,4 +1,4 @@
-dep:
+dep: go.mod go.sum
 	go get -u github.com/sarulabs/dingo/dingo
 	go mod download
 build: dep

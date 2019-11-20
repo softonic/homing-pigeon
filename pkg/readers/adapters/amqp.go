@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-type Amqp struct{
+type Amqp struct {
 	ch *amqp.Channel
 }
 
@@ -25,13 +25,43 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	failOnError(err, "Failed to open channel")
 	defer a.ch.Close()
 
+	err = a.ch.ExchangeDeclare(
+		"dead-letters",
+		"fanout",
+		true,
+		false,
+		true,
+		false,
+		nil,
+	)
+	failOnError(err, "Failed to declare dead letter exchange")
+
+	dq, err := a.ch.QueueDeclare(
+		"dead", // name
+		false,  // durable
+		false,  // delete when unused
+		false,  // exclusive
+		false,  // no-wait
+		nil,
+	)
+	failOnError(err, "Failed to declare dead letter queue")
+
+	err = a.ch.QueueBind(
+		dq.Name,
+		"#",
+		"dead-letters",
+		false,
+		nil,
+	)
+	failOnError(err, "Failed to declare dead letter binding")
+
 	q, err := a.ch.QueueDeclare(
 		"hello", // name
 		false,   // durable
 		false,   // delete when unused
 		false,   // exclusive
 		false,   // no-wait
-		nil,     // arguments
+		amqp.Table{"x-dead-letter-exchange": "dead-letters"},
 	)
 	failOnError(err, "Failed to declare queue")
 
@@ -63,9 +93,16 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 
 func (a *Amqp) HandleAck(ackChannel *chan messages.Ack) {
 	for ack := range *ackChannel {
-		err := a.ch.Ack(ack.Id, false)
-		if err != nil {
-			log.Fatal(err)
+		if ack.Ack {
+			err := a.ch.Ack(ack.Id, false)
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			err := a.ch.Nack(ack.Id, false, false)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }

@@ -9,7 +9,7 @@ import (
 type Writer struct {
 	WriteChannel *chan messages.Message
 	AckChannel   *chan messages.Ack
-	msgs         []messages.Message
+	msgs         []*messages.Message
 	WriteAdapter adapters.WriteAdapter
 }
 
@@ -17,11 +17,12 @@ func (ew *Writer) Start() {
 	go ew.timeout()
 
 	for msg := range *ew.WriteChannel {
-		ew.msgs = append(ew.msgs, msg)
+		msg := msg
+		ew.msgs = append(ew.msgs, &msg)
 
 		if ew.WriteAdapter.ShouldProcess(ew.msgs) {
 			go ew.trigger(ew.msgs)
-			ew.msgs = make([]messages.Message, 0)
+			ew.msgs = make([]*messages.Message, 0)
 		}
 	}
 }
@@ -31,17 +32,17 @@ func (ew *Writer) timeout() {
 		time.Sleep(time.Duration(ew.WriteAdapter.GetTimeoutInMs()) * time.Millisecond)
 
 		go ew.trigger(ew.msgs)
-		ew.msgs = make([]messages.Message, 0)
+		ew.msgs = make([]*messages.Message, 0)
 	}
 }
 
-func (ew *Writer) trigger(msgs []messages.Message) {
+func (ew *Writer) trigger(msgs []*messages.Message) {
 	acks := ew.WriteAdapter.ProcessMessages(msgs)
 	ew.sendAcks(acks)
 }
 
-func (ew *Writer) sendAcks(acks []messages.Ack) {
+func (ew *Writer) sendAcks(acks []*messages.Ack) {
 	for _, ack := range acks {
-		*ew.AckChannel <- ack
+		*ew.AckChannel <- *ack
 	}
 }

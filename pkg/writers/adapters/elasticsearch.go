@@ -37,23 +37,26 @@ func (wa *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack
 	for _, msg := range msgs {
 		body, err := wa.decodeBody(msg.Body)
 		if err != nil {
+			log.Fatal("Invalid Message")
 			acks = append(acks, msg.Nack())
-		} else {
-			meta, err := json.Marshal(body.Meta)
-			if err != nil {
-				acks = append(acks, msg.Nack())
-			}
-			buf.Write(append(meta, "\n"...))
-			data, err := json.Marshal(body.Data)
-			if err != nil {
-				acks = append(acks, msg.Nack())
-			}
-			buf.Write(append(data, "\n"...))
-			// Temporary
-			acks = append(acks, msg.Ack())
+			continue
 		}
+
+		acks, err = wa.writeToBuffer(&buf, body.Meta, &msg, acks)
+		if err != nil {
+			continue
+		}
+
+		acks, err = wa.writeToBuffer(&buf, body.Data, &msg, acks)
+		if err != nil {
+			continue
+		}
+
+		// Temporary
+		acks = append(acks, msg.Ack())
 	}
 
+	log.Print(buf.Bytes())
 	result, err := client.Bulk(bytes.NewReader(buf.Bytes()))
 	// check result, check failed records and add to ack
 	if err != nil {
@@ -64,6 +67,17 @@ func (wa *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack
 	log.Printf("%s", buf.Bytes())
 
 	return acks
+}
+
+func (wa *Elasticsearch) writeToBuffer(buf *bytes.Buffer, data interface{}, msg *messages.Message, acks []messages.Ack) ([]messages.Ack, error) {
+	json, err := json.Marshal(data)
+	if err != nil {
+		return append(acks, msg.Nack()), err
+	}
+
+	buf.Write(append(json, "\n"...))
+
+	return acks, nil
 }
 
 func (wa *Elasticsearch) ShouldProcess(msgs []messages.Message) bool {
@@ -78,8 +92,8 @@ func (wa *Elasticsearch) decodeBody(msg []byte) (ElasticsearchBody, error) {
 	body := ElasticsearchBody{}
 	err := json.Unmarshal(msg, &body)
 
-	log.Printf("Body: %+v", body)
 	log.Printf("Message: %s", msg)
+	log.Printf("Body: %+v", body)
 
 	return body, err
 }

@@ -2,16 +2,19 @@ package adapters
 
 import (
 	"github.com/softonic/homing-pigeon/pkg/messages"
+	amqpAdapter "github.com/softonic/homing-pigeon/pkg/readers/adapters/amqp"
 	"github.com/streadway/amqp"
 	"log"
 )
 
 type Amqp struct {
+	Config amqpAdapter.Config
 	ch *amqp.Channel
 }
 
 func (a *Amqp) Listen(writeChannel *chan messages.Message) {
-	conn, err := amqp.Dial("amqp://guest:guest@rabbit-mq:5672")
+	conn, err := amqp.Dial(a.Config.Url)
+
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -20,7 +23,7 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	defer a.ch.Close()
 
 	err = a.ch.ExchangeDeclare(
-		"dead-letters",
+		a.Config.DeadLettersExchangeName,
 		"fanout",
 		true,
 		false,
@@ -31,7 +34,7 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	failOnError(err, "Failed to declare dead letter exchange")
 
 	dq, err := a.ch.QueueDeclare(
-		"dead", // name
+		a.Config.DeadLettersQueueName, // name
 		false,  // durable
 		false,  // delete when unused
 		false,  // exclusive
@@ -43,14 +46,14 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	err = a.ch.QueueBind(
 		dq.Name,
 		"#",
-		"dead-letters",
+		a.Config.DeadLettersExchangeName,
 		false,
 		nil,
 	)
 	failOnError(err, "Failed to declare dead letter binding")
 
 	err = a.ch.ExchangeDeclare(
-		"hello",
+		a.Config.ExchangeName,
 		"fanout",
 		true,
 		false,
@@ -61,7 +64,7 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	failOnError(err, "Failed to declare exchange")
 
 	q, err := a.ch.QueueDeclare(
-		"hello", // name
+		a.Config.QueueName, // name
 		false,   // durable
 		false,   // delete when unused
 		false,   // exclusive
@@ -73,7 +76,7 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	err = a.ch.QueueBind(
 		q.Name,
 		"#",
-		"hello",
+		a.Config.ExchangeName,
 		false,
 		nil,
 	)
@@ -90,7 +93,7 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	)
 	failOnError(err, "Failed to consume")
 
-	err = a.ch.Qos(500, 0, false)
+	err = a.ch.Qos(a.Config.QosPrefetchCount, 0, false)
 	failOnError(err, "Failed setting Qos")
 
 	forever := make(chan bool)

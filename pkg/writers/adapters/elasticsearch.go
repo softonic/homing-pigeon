@@ -19,12 +19,7 @@ func (wa *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.A
 		return acks
 	}
 
-	cfg := elasticsearch.Config{
-		Addresses: []string{
-			"http://elasticsearch:9200",
-		},
-	}
-	client, err := elasticsearch.NewClient(cfg)
+	client, err := elasticsearch.NewClient(elasticsearch.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}

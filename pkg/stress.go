@@ -1,12 +1,19 @@
 package main
 
 import (
+	"github.com/sarulabs/dingo"
+	"github.com/softonic/homing-pigeon/pkg/generatedServices/dic"
 	"github.com/streadway/amqp"
 	"log"
 )
 
 func main() {
-	conn, err := amqp.Dial("amqp://guest:guest@rabbit-mq:5672")
+	container, err := dic.NewContainer(dingo.App)
+	if err != nil {
+		panic(err)
+	}
+	cfg := container.GetAmqpConfig()
+	conn, err := amqp.Dial(cfg.Url)
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -15,7 +22,7 @@ func main() {
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		"hello",
+		cfg.ExchangeName,
 		"fanout",
 		true,
 		false,
@@ -26,7 +33,7 @@ func main() {
 	failOnError(err, "Failed to declare exchange")
 
 	q, err := ch.QueueDeclare(
-		"hello", // name
+		cfg.QueueName, // name
 		false,   // durable
 		false,   // delete when unused
 		false,   // exclusive
@@ -38,13 +45,13 @@ func main() {
 	err = ch.QueueBind(
 		q.Name,
 		"#",
-		"hello",
+		cfg.ExchangeName,
 		false,
 		nil,
 	)
 	failOnError(err, "Failed to declare binding")
 	for {
-		err = ch.Publish("hello", "#", false, false, amqp.Publishing{Body: []byte("{\"meta\": {\"index\":{\"_index\":\"test\"}},\"data\": {\"field1\":\"value1\"}}")})
+		err = ch.Publish(cfg.ExchangeName, "#", false, false, amqp.Publishing{Body: []byte("{\"meta\": {\"index\":{\"_index\":\"test\"}},\"data\": {\"field1\":\"value1\"}}")})
 		if err != nil {
 			log.Printf("Message not published: %v", err)
 		}

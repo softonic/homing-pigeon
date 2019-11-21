@@ -13,6 +13,7 @@ require (
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e // indirect
+	golang.org/x/tools v0.0.0-20191121040551-947d4aa89328 // indirect
 )
 
 go 1.13

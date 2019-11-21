@@ -9,18 +9,22 @@ import (
 
 type Amqp struct {
 	Config amqpAdapter.Config
-	ch *amqp.Channel
+	conn   *amqp.Connection
+	ch     *amqp.Channel
 }
 
 func (a *Amqp) Listen(writeChannel *chan messages.Message) {
-	conn, err := amqp.Dial(a.Config.Url)
+	q := a.configureAmqp()
+	a.consume(q, writeChannel)
+}
 
+func (a *Amqp) configureAmqp() (amqp.Queue) {
+	var err error
+	a.conn, err = amqp.Dial(a.Config.Url)
 	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
 
-	a.ch, err = conn.Channel()
+	a.ch, err = a.conn.Channel()
 	failOnError(err, "Failed to open channel")
-	defer a.ch.Close()
 
 	err = a.ch.ExchangeDeclare(
 		a.Config.DeadLettersExchangeName,
@@ -35,10 +39,10 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 
 	dq, err := a.ch.QueueDeclare(
 		a.Config.DeadLettersQueueName, // name
-		false,  // durable
-		false,  // delete when unused
-		false,  // exclusive
-		false,  // no-wait
+		false,                         // durable
+		false,                         // delete when unused
+		false,                         // exclusive
+		false,                         // no-wait
 		nil,
 	)
 	failOnError(err, "Failed to declare dead letter queue")
@@ -65,10 +69,10 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 
 	q, err := a.ch.QueueDeclare(
 		a.Config.QueueName, // name
-		false,   // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
+		false,              // durable
+		false,              // delete when unused
+		false,              // exclusive
+		false,              // no-wait
 		amqp.Table{"x-dead-letter-exchange": "dead-letters"},
 	)
 	failOnError(err, "Failed to declare queue")
@@ -82,6 +86,13 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	)
 	failOnError(err, "Failed to declare binding")
 
+	err = a.ch.Qos(a.Config.QosPrefetchCount, 0, false)
+	failOnError(err, "Failed setting Qos")
+
+	return q
+}
+
+func (a *Amqp) consume(q amqp.Queue, writeChannel *chan messages.Message) {
 	msgs, err := a.ch.Consume(
 		q.Name, // queue
 		"",     // consumer
@@ -93,22 +104,22 @@ func (a *Amqp) Listen(writeChannel *chan messages.Message) {
 	)
 	failOnError(err, "Failed to consume")
 
-	err = a.ch.Qos(a.Config.QosPrefetchCount, 0, false)
-	failOnError(err, "Failed setting Qos")
+	defer a.conn.Close()
+	defer a.ch.Close()
 
-	forever := make(chan bool)
-
-	go func() {
-		msg := messages.Message{}
-		for d := range msgs {
-			msg.Id = d.DeliveryTag
-			msg.Body = d.Body
-
-			*writeChannel <- msg
-		}
-	}()
+	go a.processMessages(msgs, writeChannel)
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	<-forever
+	select {}
+}
+
+func (a *Amqp) processMessages(msgs <-chan amqp.Delivery, writeChannel *chan messages.Message) {
+	msg := messages.Message{}
+	for d := range msgs {
+		msg.Id = d.DeliveryTag
+		msg.Body = d.Body
+
+		*writeChannel <- msg
+	}
 }
 
 func failOnError(err error, msg string) {
@@ -124,11 +135,12 @@ func (a *Amqp) HandleAck(ackChannel *chan messages.Ack) {
 			if err != nil {
 				log.Fatal(err)
 			}
-		} else {
-			err := a.ch.Nack(ack.Id, false, false)
-			if err != nil {
-				log.Fatal(err)
-			}
+			continue
+		}
+
+		err := a.ch.Nack(ack.Id, false, false)
+		if err != nil {
+			log.Fatal(err)
 		}
 	}
 }

@@ -17,7 +17,7 @@ var Container = []dingo.Def{
 		Name: "Reader",
 		Build: &readers.Reader{},
 		Params: dingo.Params{
-			"WriteChannel": dingo.Service("WriteChannel"),
+			"MsgChannel": dingo.Service("MsgChannel"),
 			"AckChannel": dingo.Service("AckChannel"),
 			"ReadAdapter": dingo.Service("AmqpAdapter"),
 		},
@@ -60,7 +60,7 @@ var Container = []dingo.Def{
 		Name: "Writer",
 		Build: &writers.Writer{},
 		Params: dingo.Params{
-			"WriteChannel": dingo.Service("WriteChannel"),
+			"MsgChannel": dingo.Service("MsgChannel"),
 			"AckChannel": dingo.Service("AckChannel"),
 			"WriteAdapter": dingo.Service("ElasticsearchAdapter"),
 		},
@@ -69,7 +69,20 @@ var Container = []dingo.Def{
 	{
 		Name: "ElasticsearchAdapter",
 		Build: func() (writeAdapters.WriteAdapter, error) {
-			return &writeAdapters.Elasticsearch{}, nil
+			flushMaxSize, err := strconv.Atoi(os.Getenv("ELASTICSEARCH_FLUSH_MAX_SIZE"))
+			if err != nil {
+				flushMaxSize = 1
+			}
+
+			flushMaxIntervalMs, err := strconv.Atoi(os.Getenv("ELASTICSEARCH_FLUSH_MAX_INTERVAL_MS"))
+			if err != nil {
+				flushMaxIntervalMs = 1000
+			}
+
+			return &writeAdapters.Elasticsearch{
+				FlushMaxSize:       flushMaxSize,
+				FlushMaxIntervalMs: int64(flushMaxIntervalMs),
+			}, nil
 		},
 	},
 	{
@@ -79,16 +92,24 @@ var Container = []dingo.Def{
 		},
 	},
 	{
-		Name: "WriteChannel",
+		Name: "MsgChannel",
 		Build: func() (*chan messages.Message, error) {
-			c := make(chan messages.Message)
+			bufLen, err := strconv.Atoi(os.Getenv("MESSAGE_BUFFER_LENGTH"))
+			if err != nil {
+				bufLen = 0
+			}
+			c := make(chan messages.Message, bufLen)
 			return &c, nil
 		},
 	},
 	{
 		Name: "AckChannel",
 		Build: func() (*chan messages.Ack, error) {
-			c := make(chan messages.Ack)
+			bufLen, err := strconv.Atoi(os.Getenv("ACK_BUFFER_LENGTH"))
+			if err != nil {
+				bufLen = 0
+			}
+			c := make(chan messages.Ack, bufLen)
 			return &c, nil
 		},
 	},

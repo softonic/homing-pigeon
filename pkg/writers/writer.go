@@ -7,7 +7,7 @@ import (
 )
 
 type Writer struct {
-	WriteChannel *chan messages.Message
+	MsgChannel   *chan messages.Message
 	AckChannel   *chan messages.Ack
 	msgs         []*messages.Message
 	WriteAdapter adapters.WriteAdapter
@@ -16,7 +16,7 @@ type Writer struct {
 func (ew *Writer) Start() {
 	go ew.timeout()
 
-	for msg := range *ew.WriteChannel {
+	for msg := range *ew.MsgChannel {
 		msg := msg
 		ew.msgs = append(ew.msgs, &msg)
 

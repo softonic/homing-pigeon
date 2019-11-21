@@ -6,12 +6,12 @@ import (
 )
 
 type Reader struct {
-	ReadAdapter  adapters.ReadAdapter
-	WriteChannel *chan messages.Message
-	AckChannel   *chan messages.Ack
+	ReadAdapter adapters.ReadAdapter
+	MsgChannel  *chan messages.Message
+	AckChannel  *chan messages.Ack
 }
 
 func (r *Reader) Start() {
 	go r.ReadAdapter.HandleAck(r.AckChannel)
-	r.ReadAdapter.Listen(r.WriteChannel)
+	r.ReadAdapter.Listen(r.MsgChannel)
 }

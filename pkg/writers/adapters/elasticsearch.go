@@ -10,9 +10,12 @@ import (
 	"log"
 )
 
-type Elasticsearch struct{}
+type Elasticsearch struct{
+	FlushMaxSize       int
+	FlushMaxIntervalMs int64
+}
 
-func (wa *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.Ack {
+func (es *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.Ack {
 	acks := make([]*messages.Ack, len(msgs))
 
 	if len(msgs) == 0 {
@@ -27,7 +30,7 @@ func (wa *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.A
 	var buf bytes.Buffer
 
 	for i, msg := range msgs {
-		body, err := wa.decodeBody(msg.Body)
+		body, err := es.decodeBody(msg.Body)
 		if err != nil {
 			log.Printf("Invalid Message: %v", *msg)
 			nack, err := msg.Nack()
@@ -37,7 +40,7 @@ func (wa *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.A
 			acks[i] = nack
 			continue
 		}
-		err = wa.writeToBuffer(&buf, body)
+		err = es.writeToBuffer(&buf, body)
 		if err != nil {
 			continue
 		}
@@ -50,17 +53,17 @@ func (wa *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.A
 	result, err := client.Bulk(bytes.NewReader(buf.Bytes()))
 	if err != nil || result.IsError() {
 		log.Printf("Error in bulk action, %v", err)
-		wa.setAllNacks(msgs, acks)
+		es.setAllNacks(msgs, acks)
 		return acks
 	}
 
-	response := wa.getResponseFromResult(result)
-	wa.setAcksFromResponse(response, msgs, acks)
+	response := es.getResponseFromResult(result)
+	es.setAcksFromResponse(response, msgs, acks)
 
 	return acks
 }
 
-func (wa *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBulkResponse, msgs []*messages.Message, acks []*messages.Ack) {
+func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBulkResponse, msgs []*messages.Message, acks []*messages.Ack) {
 	log.Printf("Result: %v", response)
 	maxValidStatus := 299
 
@@ -94,7 +97,7 @@ func (wa *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBul
 	}
 }
 
-func (wa *Elasticsearch) getResponseFromResult(result *esapi.Response) esAdapter.ElasticSearchBulkResponse {
+func (es *Elasticsearch) getResponseFromResult(result *esapi.Response) esAdapter.ElasticSearchBulkResponse {
 	response := esAdapter.ElasticSearchBulkResponse{}
 	d := json.NewDecoder(result.Body)
 	err := d.Decode(&response)
@@ -104,7 +107,7 @@ func (wa *Elasticsearch) getResponseFromResult(result *esapi.Response) esAdapter
 	return response
 }
 
-func (wa *Elasticsearch) setAllNacks(msgs []*messages.Message, acks []*messages.Ack) {
+func (es *Elasticsearch) setAllNacks(msgs []*messages.Message, acks []*messages.Ack) {
 	for i, msg := range msgs {
 		nack, err := msg.Nack()
 		if err == nil {
@@ -113,7 +116,7 @@ func (wa *Elasticsearch) setAllNacks(msgs []*messages.Message, acks []*messages.
 	}
 }
 
-func (wa *Elasticsearch) writeToBuffer(buf *bytes.Buffer, body esAdapter.ElasticsearchBody) error {
+func (es *Elasticsearch) writeToBuffer(buf *bytes.Buffer, body esAdapter.ElasticsearchBody) error {
 	meta, err := json.Marshal(body.Meta)
 	if err != nil {
 		return err
@@ -132,15 +135,15 @@ func (wa *Elasticsearch) writeToBuffer(buf *bytes.Buffer, body esAdapter.Elastic
 	return nil
 }
 
-func (wa *Elasticsearch) ShouldProcess(msgs []*messages.Message) bool {
-	return len(msgs) > 250
+func (es *Elasticsearch) ShouldProcess(msgs []*messages.Message) bool {
+	return len(msgs) >= es.FlushMaxSize
 }
 
-func (wa *Elasticsearch) GetTimeoutInMs() int64 {
-	return int64(10000)
+func (es *Elasticsearch) GetTimeoutInMs() int64 {
+	return es.FlushMaxIntervalMs
 }
 
-func (wa *Elasticsearch) decodeBody(msg []byte) (esAdapter.ElasticsearchBody, error) {
+func (es *Elasticsearch) decodeBody(msg []byte) (esAdapter.ElasticsearchBody, error) {
 	body := esAdapter.ElasticsearchBody{}
 	err := json.Unmarshal(msg, &body)
 

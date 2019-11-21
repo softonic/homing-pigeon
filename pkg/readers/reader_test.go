@@ -29,8 +29,6 @@ func TestAdapterIsStarted(t *testing.T) {
 	readAdapterMock.On("Listen", &msgChannel)
 	readAdapterMock.On("HandleAck", &ackChannel)
 
-	//readAdapterMock.HandleAck(&ackChannel)
-
 	reader := Reader{
 		ReadAdapter: readAdapterMock,
 		MsgChannel:  &msgChannel,

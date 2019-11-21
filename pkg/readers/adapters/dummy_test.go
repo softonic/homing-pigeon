@@ -25,10 +25,9 @@ func TestAcksAreRead(t *testing.T) {
 	}
 
 	obj := new(Dummy)
-
 	go obj.HandleAck(&ackChannel)
 
-	time.Sleep(time.Duration(1000000))
-	close(ackChannel)
-	assert.Empty(t, ackChannel)
+	assert.Eventually(t, func() bool {
+		return assert.Empty(t, ackChannel)
+	}, time.Millisecond*10, time.Millisecond)
 }

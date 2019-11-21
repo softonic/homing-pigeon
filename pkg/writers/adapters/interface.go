@@ -1,9 +1,12 @@
 package adapters
 
-import "github.com/softonic/homing-pigeon/pkg/messages"
+import (
+	"github.com/softonic/homing-pigeon/pkg/messages"
+	"time"
+)
 
 type WriteAdapter interface {
 	ProcessMessages(msgs []*messages.Message) []*messages.Ack
 	ShouldProcess(msgs []*messages.Message) bool
-	GetTimeoutInMs() int64
+	GetTimeout() time.Duration
 }

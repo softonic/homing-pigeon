@@ -10,6 +10,7 @@ import (
 	readAdapters "github.com/softonic/homing-pigeon/pkg/readers/adapters"
 	"os"
 	"strconv"
+	"time"
 )
 
 var Container = []dingo.Def{
@@ -80,8 +81,8 @@ var Container = []dingo.Def{
 			}
 
 			return &writeAdapters.Elasticsearch{
-				FlushMaxSize:       flushMaxSize,
-				FlushMaxIntervalMs: int64(flushMaxIntervalMs),
+				FlushMaxSize:  flushMaxSize,
+				FlushInterval: time.Duration(flushMaxIntervalMs) * time.Millisecond,
 			}, nil
 		},
 	},

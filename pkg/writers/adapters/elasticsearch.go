@@ -8,11 +8,12 @@ import (
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	esAdapter "github.com/softonic/homing-pigeon/pkg/writers/adapters/elasticsearch"
 	"log"
+	"time"
 )
 
 type Elasticsearch struct{
-	FlushMaxSize       int
-	FlushMaxIntervalMs int64
+	FlushMaxSize  int
+	FlushInterval time.Duration
 }
 
 func (es *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.Ack {
@@ -139,8 +140,8 @@ func (es *Elasticsearch) ShouldProcess(msgs []*messages.Message) bool {
 	return len(msgs) >= es.FlushMaxSize
 }
 
-func (es *Elasticsearch) GetTimeoutInMs() int64 {
-	return es.FlushMaxIntervalMs
+func (es *Elasticsearch) GetTimeout() time.Duration {
+	return es.FlushInterval
 }
 
 func (es *Elasticsearch) decodeBody(msg []byte) (esAdapter.ElasticsearchBody, error) {

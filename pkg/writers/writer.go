@@ -29,7 +29,7 @@ func (ew *Writer) Start() {
 
 func (ew *Writer) timeout() {
 	for {
-		time.Sleep(time.Duration(ew.WriteAdapter.GetTimeoutInMs()) * time.Millisecond)
+		time.Sleep(ew.WriteAdapter.GetTimeout())
 
 		go ew.trigger(ew.msgs)
 		ew.msgs = make([]*messages.Message, 0)

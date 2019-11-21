@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"github.com/softonic/homing-pigeon/pkg/messages"
+	"time"
 )
 
 type Nop struct {}
@@ -17,8 +18,8 @@ func (wa *Nop) ProcessMessages(msgs []*messages.Message) []*messages.Ack {
 	return acks
 }
 
-func (wa *Nop) GetTimeoutInMs() int64 {
-	return int64(1000)
+func (wa *Nop) GetTimeout() time.Duration {
+	return time.Millisecond * 1000
 }
 
 func (wa *Nop) ShouldProcess(msgs []*messages.Message) bool {

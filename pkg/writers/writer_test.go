@@ -1,6 +1,7 @@
 package writers
 
 import (
+	"github.com/softonic/homing-pigeon/mocks"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -10,32 +11,22 @@ import (
 
 type writeAdapterMock struct {
 	mock.Mock
-	maxFlushSize int
-	timeout      time.Duration
-}
-
-func (r *writeAdapterMock) ProcessMessages(msgs []*messages.Message) []*messages.Ack {
-	acks := make([]*messages.Ack, 0)
-	for _, msg := range msgs {
-		ack, err := msg.Ack()
-		if err == nil {
-			acks = append(acks, ack)
-		}
-	}
-	return acks}
-
-func (r *writeAdapterMock) ShouldProcess(msgs []*messages.Message) bool {
-	return len(msgs) >= r.maxFlushSize
-}
-
-func (r *writeAdapterMock) GetTimeout() time.Duration {
-	return r.timeout
+	timeout time.Duration
 }
 
 func TestAdapterProcessSingleMessage(t *testing.T) {
-	writeAdapter := new(writeAdapterMock)
-	writeAdapter.maxFlushSize = 1
-	writeAdapter.timeout = time.Hour
+	ack := []*messages.Ack{
+		{
+			Id:  0,
+			Ack: false,
+		},
+	}
+
+	writeAdapter := new(mocks.WriteAdapter)
+	writeAdapter.On("GetTimeout").Return(time.Hour)
+	writeAdapter.On("ShouldProcess", mock.Anything).Return(true)
+	writeAdapter.On("ProcessMessages", mock.Anything).Return(ack)
+
 	msgChannel := make(chan messages.Message, 1)
 	ackChannel := make(chan messages.Ack, 1)
 
@@ -46,7 +37,7 @@ func TestAdapterProcessSingleMessage(t *testing.T) {
 	}
 	msgChannel <- messages.Message{
 		Id:   0,
-		Body: []byte("hola"),
+		Body: []byte("hello"),
 	}
 
 	go writer.Start()
@@ -59,15 +50,35 @@ func TestAdapterProcessSingleMessage(t *testing.T) {
 		time.Millisecond*10,
 		time.Millisecond,
 	)
+	writeAdapter.AssertExpectations(t)
 }
 
 func TestAdapterProcessBulkMessages(t *testing.T) {
-	writeAdapter := new(writeAdapterMock)
-	writeAdapter.maxFlushSize = 3
-	writeAdapter.timeout = time.Hour
-
-	msgChannel := make(chan messages.Message, 4)
-	ackChannel := make(chan messages.Ack, 4)
+	expectedMessages := 3
+	writeAdapter := new(mocks.WriteAdapter)
+	writeAdapter.On("GetTimeout").Return(time.Hour)
+	writeAdapter.On("ShouldProcess", mock.MatchedBy(func(msgs []*messages.Message) bool {
+		return len(msgs) != expectedMessages
+	})).Return(false)
+	writeAdapter.On("ShouldProcess", mock.MatchedBy(func(msgs []*messages.Message) bool {
+		return len(msgs) == expectedMessages
+	})).Return(true)
+	writeAdapter.On("ProcessMessages", mock.Anything).Return([]*messages.Ack{
+		{
+			Id:  0,
+			Ack: false,
+		},
+		{
+			Id:  0,
+			Ack: false,
+		},
+		{
+			Id:  0,
+			Ack: false,
+		},
+	})
+	msgChannel := make(chan messages.Message, expectedMessages+1)
+	ackChannel := make(chan messages.Ack, expectedMessages+1)
 
 	writer := Writer{
 		WriteAdapter: writeAdapter,
@@ -75,34 +86,48 @@ func TestAdapterProcessBulkMessages(t *testing.T) {
 		AckChannel:   &ackChannel,
 	}
 
-	for i := 0; i < writeAdapter.maxFlushSize; i++ {
-		msgChannel <- messages.Message{
-			Id:   uint64(i),
-			Body: []byte("hola"),
-		}
-
-	}
+	writeMessagesToChannel(&msgChannel)
 
 	go writer.Start()
 
 	assert.Eventually(
 		t,
 		func() bool {
-			return assert.Len(t, ackChannel, writeAdapter.maxFlushSize) && assert.Empty(t, msgChannel)
+			return assert.Len(t, ackChannel, expectedMessages) && assert.Empty(t, msgChannel)
 		},
 		time.Millisecond*10,
 		time.Millisecond,
 	)
+
+	writeAdapter.AssertExpectations(t)
 }
 
 func TestAdapterTimeoutProcessMessages(t *testing.T) {
-	writeAdapter := new(writeAdapterMock)
-	writeAdapter.maxFlushSize = 3
-	writeAdapter.timeout = 0
-
-	itemsToProcess := writeAdapter.maxFlushSize - 1
-	msgChannel := make(chan messages.Message, 4)
-	ackChannel := make(chan messages.Ack, 4)
+	expectedMessages := 3
+	writeAdapter := new(mocks.WriteAdapter)
+	writeAdapter.On("GetTimeout").Return(time.Duration(0))
+	writeAdapter.On("ShouldProcess", mock.Anything).Return(false)
+	writeAdapter.On("ProcessMessages", mock.MatchedBy(func(msgs []*messages.Message) bool {
+		return len(msgs) == expectedMessages
+	})).Return([]*messages.Ack{
+		{
+			Id:  0,
+			Ack: false,
+		},
+		{
+			Id:  0,
+			Ack: false,
+		},
+		{
+			Id:  0,
+			Ack: false,
+		},
+	})
+	writeAdapter.On("ProcessMessages", mock.MatchedBy(func(msgs []*messages.Message) bool {
+		return len(msgs) != expectedMessages
+	})).Return([]*messages.Ack{})
+	msgChannel := make(chan messages.Message, expectedMessages+1)
+	ackChannel := make(chan messages.Ack, expectedMessages+1)
 
 	writer := Writer{
 		WriteAdapter: writeAdapter,
@@ -110,21 +135,33 @@ func TestAdapterTimeoutProcessMessages(t *testing.T) {
 		AckChannel:   &ackChannel,
 	}
 
-	for i := 0; i < itemsToProcess; i++ {
-		msgChannel <- messages.Message{
-			Id:   uint64(i),
-			Body: []byte("hola"),
-		}
-	}
+	writeMessagesToChannel(&msgChannel)
 
 	go writer.Start()
 
 	assert.Eventually(
 		t,
 		func() bool {
-			return assert.Len(t, ackChannel, itemsToProcess)
+			return assert.Len(t, ackChannel, expectedMessages) && assert.Empty(t, msgChannel)
 		},
 		time.Millisecond*10,
 		time.Millisecond,
 	)
+
+	writeAdapter.AssertExpectations(t)
+}
+
+func writeMessagesToChannel(msgChannel *chan messages.Message) {
+	*msgChannel <- messages.Message{
+		Id:   uint64(0),
+		Body: []byte("hello"),
+	}
+	*msgChannel <- messages.Message{
+		Id:   uint64(1),
+		Body: []byte("hello"),
+	}
+	*msgChannel <- messages.Message{
+		Id:   uint64(2),
+		Body: []byte("hello"),
+	}
 }

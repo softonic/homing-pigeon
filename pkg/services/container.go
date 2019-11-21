@@ -1,13 +1,15 @@
 package services
 
 import (
+	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/sarulabs/dingo"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/readers"
+	readAdapters "github.com/softonic/homing-pigeon/pkg/readers/adapters"
 	amqpAdapter "github.com/softonic/homing-pigeon/pkg/readers/adapters/amqp"
 	"github.com/softonic/homing-pigeon/pkg/writers"
-	"github.com/sarulabs/dingo"
 	writeAdapters "github.com/softonic/homing-pigeon/pkg/writers/adapters"
-	readAdapters "github.com/softonic/homing-pigeon/pkg/readers/adapters"
+	elasticsearchAdapter "github.com/softonic/homing-pigeon/pkg/writers/adapters/elasticsearch"
 	"os"
 	"strconv"
 	"time"
@@ -69,7 +71,7 @@ var Container = []dingo.Def{
 
 	{
 		Name: "ElasticsearchAdapter",
-		Build: func() (writeAdapters.WriteAdapter, error) {
+		Build: func(client *elasticsearchAdapter.BulkClient) (writeAdapters.WriteAdapter, error) {
 			flushMaxSize, err := strconv.Atoi(os.Getenv("ELASTICSEARCH_FLUSH_MAX_SIZE"))
 			if err != nil {
 				flushMaxSize = 1
@@ -79,11 +81,20 @@ var Container = []dingo.Def{
 			if err != nil {
 				flushMaxIntervalMs = 1000
 			}
-
 			return &writeAdapters.Elasticsearch{
 				FlushMaxSize:  flushMaxSize,
 				FlushInterval: time.Duration(flushMaxIntervalMs) * time.Millisecond,
+				Client: *client,
 			}, nil
+		},
+		Params: dingo.Params{
+			"0": dingo.Service("ElasticsearchClient"),
+		},
+	},
+	{
+		Name: "ElasticsearchClient",
+		Build: func() (*elasticsearchAdapter.BulkClient, error){
+			return elasticsearch.NewClient(elasticsearch.Config{}), nil
 		},
 	},
 	{

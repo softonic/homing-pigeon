@@ -108,3 +108,68 @@ func TestBulkActionWithSingleItemSucessful(t *testing.T) {
 	assert.Len(t, acks, 1)
 	assert.True(t, acks[0].Ack)
 }
+
+func TestBulkActionWithSingleItemUnsuccessful(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:  0,
+		FlushInterval: 0,
+		Bulk:          bulk.getBulkFunc(),
+	}
+
+	response := esapi.Response{
+		StatusCode: 201,
+		Header:     nil,
+		Body:       ioutil.NopCloser(strings.NewReader("{\"errors\":true,\"items\":[{\"create\":{\"status\":409}}]}")),
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	acks := esAdapter.ProcessMessages([]*messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"valid\": \"json\" }"),
+		},
+	})
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, acks, 1)
+	assert.False(t, acks[0].Ack)
+}
+
+
+func TestBulkActionWithMixedItemStatus(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:  0,
+		FlushInterval: 0,
+		Bulk:          bulk.getBulkFunc(),
+	}
+
+	response := esapi.Response{
+		StatusCode: 201,
+		Header:     nil,
+		Body:       ioutil.NopCloser(strings.NewReader("{\"errors\":true,\"items\":[{\"create\":{\"status\":409}},{\"create\":{\"status\":200}},{\"create\":{\"status\":409}}]}")),
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	acks := esAdapter.ProcessMessages([]*messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"valid\": \"json\" }"),
+		},
+		{
+			Id:   1,
+			Body: []byte("{ \"valid\": \"json\" }"),
+		},
+		{
+			Id:   2,
+			Body: []byte("{ \"valid\": \"json\" }"),
+		},
+	})
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, acks, 3)
+	assert.False(t, acks[0].Ack)
+	assert.True(t, acks[1].Ack)
+	assert.False(t, acks[2].Ack)
+}

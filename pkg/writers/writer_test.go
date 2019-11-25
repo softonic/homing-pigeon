@@ -139,7 +139,7 @@ func TestAdapterTimeoutProcessMessages(t *testing.T) {
 		func() bool {
 			return assert.Len(t, ackChannel, expectedMessages) && assert.Empty(t, msgChannel)
 		},
-		time.Millisecond*10,
+		time.Millisecond*100,
 		time.Millisecond,
 	)
 

@@ -93,14 +93,9 @@ func TestBulkActionWithSingleItemSucessful(t *testing.T) {
 	response := esapi.Response{
 		StatusCode: 201,
 		Header:     nil,
-		Body:       nil,
+		Body:       ioutil.NopCloser(strings.NewReader("{\"errors\":false,\"items\":[{\"create\":{\"status\":200}}]}")),
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
-
-	bulk.SetBody("{\"errors\":false,\"items\":[{\"create\":{\"status\":200}}]}")
-	func (b *BulkMock) SetBody(s string) {
-		b.Body = ioutil.NopCloser(strings.NewReader(s))
-	}
 
 	acks := esAdapter.ProcessMessages([]*messages.Message{
 		{

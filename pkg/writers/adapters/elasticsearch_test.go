@@ -6,7 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"io"
-	"log"
+	"io/ioutil"
+	"strings"
 	"testing"
 )
 
@@ -22,8 +23,15 @@ type BulkMock struct {
 
 func (b *BulkMock) getBulkFunc() esapi.Bulk {
 	return func(body io.Reader, o ...func(*esapi.BulkRequest)) (*esapi.Response, error) {
-		b.Called()
-		return nil, nil
+		args := b.Called(body)
+
+		var err error
+		err = nil
+		if args.Get(1) != nil {
+			err = args.Get(0).(error)
+		}
+
+		return args.Get(0).(*esapi.Response), err
 	}
 }
 
@@ -42,7 +50,66 @@ func TestAdapterReceiveInvalidMessage(t *testing.T) {
 		},
 	})
 
-	log.Printf("%v", bulk.Calls) //@TODO We need to know with which name is it called
+	bulk.AssertNotCalled(t, "func1")
 	assert.Len(t, acks, 1)
 	assert.False(t, acks[0].Ack)
+}
+
+func TestBulkActionWithErrorsMustDiscardAllMessages(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:  0,
+		FlushInterval: 0,
+		Bulk:          bulk.getBulkFunc(),
+	}
+
+	response := esapi.Response{
+		StatusCode: 404,
+		Header:     nil,
+		Body:       nil,
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	acks := esAdapter.ProcessMessages([]*messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"valid\": \"json\" }"),
+		},
+	})
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, acks, 1)
+	assert.False(t, acks[0].Ack)
+}
+
+func TestBulkActionWithSingleItemSucessful(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:  0,
+		FlushInterval: 0,
+		Bulk:          bulk.getBulkFunc(),
+	}
+
+	response := esapi.Response{
+		StatusCode: 201,
+		Header:     nil,
+		Body:       nil,
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	bulk.SetBody("{\"errors\":false,\"items\":[{\"create\":{\"status\":200}}]}")
+	func (b *BulkMock) SetBody(s string) {
+		b.Body = ioutil.NopCloser(strings.NewReader(s))
+	}
+
+	acks := esAdapter.ProcessMessages([]*messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"valid\": \"json\" }"),
+		},
+	})
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, acks, 1)
+	assert.True(t, acks[0].Ack)
 }

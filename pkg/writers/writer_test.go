@@ -9,11 +9,6 @@ import (
 	"time"
 )
 
-type writeAdapterMock struct {
-	mock.Mock
-	timeout time.Duration
-}
-
 func TestAdapterProcessSingleMessage(t *testing.T) {
 	ack := []*messages.Ack{
 		{

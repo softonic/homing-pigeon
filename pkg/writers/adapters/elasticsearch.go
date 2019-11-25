@@ -3,7 +3,6 @@ package adapters
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	esAdapter "github.com/softonic/homing-pigeon/pkg/writers/adapters/elasticsearch"
@@ -14,7 +13,7 @@ import (
 type Elasticsearch struct{
 	FlushMaxSize  int
 	FlushInterval time.Duration
-	Client *elasticsearch.Client
+	Bulk          esapi.Bulk
 }
 
 func (es *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.Ack {
@@ -47,7 +46,7 @@ func (es *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.A
 		return acks
 	}
 
-	result, err := es.Client.Bulk(bytes.NewReader(buf.Bytes()))
+	result, err := es.Bulk(bytes.NewReader(buf.Bytes()))
 	if err != nil || result.IsError() {
 		log.Printf("Error in bulk action, %v", err)
 		es.setAllNacks(msgs, acks)

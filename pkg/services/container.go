@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/sarulabs/dingo"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/readers"
@@ -70,7 +71,7 @@ var Container = []dingo.Def{
 
 	{
 		Name: "ElasticsearchAdapter",
-		Build: func(client *elasticsearch.Client) (writeAdapters.WriteAdapter, error) {
+		Build: func(bulk esapi.Bulk) (writeAdapters.WriteAdapter, error) {
 			flushMaxSize, err := strconv.Atoi(os.Getenv("ELASTICSEARCH_FLUSH_MAX_SIZE"))
 			if err != nil {
 				flushMaxSize = 1
@@ -83,17 +84,22 @@ var Container = []dingo.Def{
 			return &writeAdapters.Elasticsearch{
 				FlushMaxSize:  flushMaxSize,
 				FlushInterval: time.Duration(flushMaxIntervalMs) * time.Millisecond,
-				Client: client,
+				Bulk:          bulk,
 			}, nil
 		},
 		Params: dingo.Params{
-			"0": dingo.Service("ElasticsearchClient"),
+			"0": dingo.Service("ElasticsearchBulkClient"),
 		},
 	},
 	{
-		Name: "ElasticsearchClient",
-		Build: func() (*elasticsearch.Client, error){
-			return elasticsearch.NewClient(elasticsearch.Config{})
+		Name: "ElasticsearchBulkClient",
+		Build: func() (esapi.Bulk, error){
+			es, err := elasticsearch.NewClient(elasticsearch.Config{})
+			if err != nil {
+				return nil, err
+			}
+
+			return es.Bulk, nil
 		},
 	},
 	{

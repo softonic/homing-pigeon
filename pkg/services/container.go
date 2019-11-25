@@ -9,7 +9,6 @@ import (
 	amqpAdapter "github.com/softonic/homing-pigeon/pkg/readers/adapters/amqp"
 	"github.com/softonic/homing-pigeon/pkg/writers"
 	writeAdapters "github.com/softonic/homing-pigeon/pkg/writers/adapters"
-	elasticsearchAdapter "github.com/softonic/homing-pigeon/pkg/writers/adapters/elasticsearch"
 	"os"
 	"strconv"
 	"time"
@@ -71,7 +70,7 @@ var Container = []dingo.Def{
 
 	{
 		Name: "ElasticsearchAdapter",
-		Build: func(client *elasticsearchAdapter.BulkClient) (writeAdapters.WriteAdapter, error) {
+		Build: func(client *elasticsearch.Client) (writeAdapters.WriteAdapter, error) {
 			flushMaxSize, err := strconv.Atoi(os.Getenv("ELASTICSEARCH_FLUSH_MAX_SIZE"))
 			if err != nil {
 				flushMaxSize = 1
@@ -84,7 +83,7 @@ var Container = []dingo.Def{
 			return &writeAdapters.Elasticsearch{
 				FlushMaxSize:  flushMaxSize,
 				FlushInterval: time.Duration(flushMaxIntervalMs) * time.Millisecond,
-				Client: *client,
+				Client: client,
 			}, nil
 		},
 		Params: dingo.Params{
@@ -93,8 +92,8 @@ var Container = []dingo.Def{
 	},
 	{
 		Name: "ElasticsearchClient",
-		Build: func() (*elasticsearchAdapter.BulkClient, error){
-			return elasticsearch.NewClient(elasticsearch.Config{}), nil
+		Build: func() (*elasticsearch.Client, error){
+			return elasticsearch.NewClient(elasticsearch.Config{})
 		},
 	},
 	{

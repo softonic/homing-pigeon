@@ -10,6 +10,8 @@ import (
 	amqpAdapter "github.com/softonic/homing-pigeon/pkg/readers/adapters/amqp"
 	"github.com/softonic/homing-pigeon/pkg/writers"
 	writeAdapters "github.com/softonic/homing-pigeon/pkg/writers/adapters"
+	"github.com/streadway/amqp"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -33,9 +35,99 @@ var Container = []dingo.Def{
 	},
 	{
 		Name: "AmqpAdapter",
-		Build: func(config amqpAdapter.Config) (readAdapters.ReadAdapter, error) {
+		Build: func(config amqpAdapter.Config, ) (readAdapters.ReadAdapter, error) {
+			failOnError := func(err error, msg string) {
+				if err != nil {
+					log.Fatalf("%s: %s", msg, err)
+				}
+			}
+
+			conn, err := amqp.Dial(config.Url)
+			failOnError(err, "Failed to connect to RabbitMQ")
+
+			ch, err := conn.Channel()
+			failOnError(err, "Failed to open channel")
+
+			err = ch.ExchangeDeclare(
+				config.DeadLettersExchangeName,
+				"fanout",
+				true,
+				false,
+				true,
+				false,
+				nil,
+			)
+			failOnError(err, "Failed to declare dead letter exchange")
+
+			dq, err := ch.QueueDeclare(
+				config.DeadLettersQueueName, // name
+				false,                         // durable
+				false,                         // delete when unused
+				false,                         // exclusive
+				false,                         // no-wait
+				nil,
+			)
+			failOnError(err, "Failed to declare dead letter queue")
+
+			err = ch.QueueBind(
+				dq.Name,
+				"#",
+				config.DeadLettersExchangeName,
+				false,
+				nil,
+			)
+			failOnError(err, "Failed to declare dead letter binding")
+
+			err = ch.ExchangeDeclare(
+				config.ExchangeName,
+				"fanout",
+				true,
+				false,
+				false,
+				false,
+				nil,
+			)
+			failOnError(err, "Failed to declare exchange")
+
+			q, err := ch.QueueDeclare(
+				config.QueueName, // name
+				false,              // durable
+				false,              // delete when unused
+				false,              // exclusive
+				false,              // no-wait
+				amqp.Table{"x-dead-letter-exchange": config.DeadLettersExchangeName},
+			)
+			failOnError(err, "Failed to declare queue")
+
+			err = ch.QueueBind(
+				q.Name,
+				"#",
+				config.ExchangeName,
+				false,
+				nil,
+			)
+			failOnError(err, "Failed to declare binding")
+
+			err = ch.Qos(config.QosPrefetchCount, 0, false)
+			failOnError(err, "Failed setting Qos")
+
+			msgs, err := ch.Consume(
+				q.Name, // queue
+				config.ConsumerName,     // consumer
+				false,  // auto-ack
+				false,  // exclusive
+				false,  // no-local
+				false,  // no-wait
+				nil,
+			)
+			if err != nil {
+				log.Fatalf("Failed to consume: %s", err)
+			}
+
 			return &readAdapters.Amqp{
-				Config: config,
+				ConsumedMessages: msgs,
+				Conn:             conn,
+				Ch:               ch,
 			}, nil
 		},
 		Params: dingo.Params{
@@ -49,13 +141,20 @@ var Container = []dingo.Def{
 			if err != nil {
 				qosPrefetchCount = 0
 			}
+
+			consumerName := os.Getenv("RABBITMQ_CONSUMER_NAME")
+			if consumerName == "" {
+				consumerName, _ = os.Hostname()
+			}
+
 			return amqpAdapter.Config{
-				Url: os.Getenv("RABBITMQ_URL"),
+				Url:                     os.Getenv("RABBITMQ_URL"),
 				DeadLettersExchangeName: os.Getenv("RABBITMQ_DLX_NAME"),
-				DeadLettersQueueName: os.Getenv("RABBITMQ_DLX_QUEUE_NAME"),
-				ExchangeName: os.Getenv("RABBITMQ_EXCHANGE_NAME"),
-				QueueName: os.Getenv("RABBITMQ_QUEUE_NAME"),
-				QosPrefetchCount: qosPrefetchCount,
+				DeadLettersQueueName:    os.Getenv("RABBITMQ_DLX_QUEUE_NAME"),
+				ExchangeName:            os.Getenv("RABBITMQ_EXCHANGE_NAME"),
+				QueueName:               os.Getenv("RABBITMQ_QUEUE_NAME"),
+				QosPrefetchCount:        qosPrefetchCount,
+				ConsumerName:            consumerName,
 			}, nil
 		},
 	},

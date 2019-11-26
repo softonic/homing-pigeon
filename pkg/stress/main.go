@@ -1,4 +1,4 @@
-package main
+package stress
 
 import (
 	"github.com/sarulabs/dingo"

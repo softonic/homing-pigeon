@@ -98,4 +98,4 @@ $ make test
 
 ## Acknowledgments
 
-A special thank you to Adrià Compte, the genius behind the homing pigeon logo.
+A special thank you to [Adrià Compte](https://dribbble.com/muniatu), the genius behind the homing pigeon logo.

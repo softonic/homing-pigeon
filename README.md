@@ -2,17 +2,23 @@
 
 Deliver messages from an input interface to an output interface.
 
-![](homing_pigeon.png)
+![](images/logo.png)
 
 [Credits](#acknowledgments)
 
 ### Overview
 
-Homing pigeon will listen to incoming messages from a reader interface and bring them to the requested storage (writer) interface.
-The storage interface will be able to acknowledge (or not) the messages, so that this information
-can be brought back to the reader and handled accordingly.
+![](images/diagram.png)
 
-Currently implemented interfaces:
+Homing Pigeon is an application thought to connect read and write adapters easily.
+Whatever comes from an input, it will be sent to a specific output, without the need of writing the usual boilerplate code.
+This tool is thought so that we can easily plug in any kind of adapter for both input and ouput.
+We can use this application to easily store messages, or to easily proxy messages.
+A few examples could be: AMQP to Elasticsearch, HTTP to MySQL, HTTP to HTTP, or any kind of combination.
+
+An important detail, is that the message will be forwarded from the read interface to the write interface "as is", therefore the expected format would depend on which write adapter is connected.
+
+### Currently implemented interfaces
 
 #### Read interfaces
 
@@ -22,6 +28,7 @@ Reader interface can handle acks and nacks. Nacks will be automatically sent to 
 #### Write interfaces
 
 ##### Elasticsearch with bulk API
+
 Failed messages will be nacked, and successful messages will be acked.
 It supports a well defined JSON format, which of course reminds of elasticsearch Bulk API:
 

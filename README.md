@@ -4,6 +4,8 @@ Deliver messages from an input interface to an output interface.
 
 ![](homing_pigeon.png)
 
+[Credits](#acknowledgments)
+
 ### Overview
 
 Homing pigeon will listen to incoming messages from a reader interface and bring them to the requested storage (writer) interface.
@@ -85,3 +87,8 @@ $ make test
 
 * Implement interface for transforming messages after reader and before writer
 * Add possibility to define username and password outside URLs for adapters
+
+
+## Acknowledgments
+
+A special thank you to Adrià Compte, the genius behind the homing pigeon logo.

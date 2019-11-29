@@ -89,7 +89,6 @@ func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBul
 			}
 		}
 		responseItemPos++
-
 	}
 }
 

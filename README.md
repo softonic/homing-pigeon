@@ -23,7 +23,9 @@ An important detail, is that the message will be forwarded from the read interfa
 #### Read interfaces
 
 ##### RabbitMQ
-Reader interface can handle acks and nacks. Nacks will be automatically sent to dead letter channel withouth retrying
+
+Reader interface reads messages from a single queue and acks or (optionally) nacks the message, depending
+ as the writer will indicate. All nacks will be automatically dead lettered without retrying
 
 #### Write interfaces
 

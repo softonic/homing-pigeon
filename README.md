@@ -58,11 +58,19 @@ $ ./homing-pigeon
 
 In order to start up correctly, it needs well defined environment variables:
 
+#### Core
+
 | Name                                 | Value                                                              |
 | ------------------------------------ | ------------------------------------------------------------------ |
-| ELASTICSEARCH_URL                    | Elasticsearch url string                                           |
-| ELASTICSEARCH_FLUSH_MAX_SIZE         | Elasticsearch flush to bulk API maximum size                       |
-| ELASTICSEARCH_FLUSH_MAX_INTERVAL_MS  | Elasticsearch flush to bulk API max interval time, in milliseconds |
+| MESSAGE_BUFFER_LENGTH                | Buffer length for internal golang channel used for messaging       |
+| ACK_BUFFER_LENGTH                    | Buffer length for internal golang channel used for acks            |
+
+#### Read Adapters
+
+##### RabbitMQ
+
+| Name                                 | Value                                                              |
+| ------------------------------------ | ------------------------------------------------------------------ |
 | RABBITMQ_URL                         | RabbitMQ url string                                                |
 | RABBITMQ_DLX_NAME                    | RabbitMQ dead letters exchange name                                |
 | RABBITMQ_DLX_QUEUE_NAME              | RabbitMQ dead letters exchange's queue name                        |
@@ -70,8 +78,16 @@ In order to start up correctly, it needs well defined environment variables:
 | RABBITMQ_QUEUE_NAME                  | RabbitMQ messaging exchange's queue name                           |
 | RABBITMQ_CONSUMER_NAME               | Name for RabbitMQ's consumer (optional, defaults to HOSTNAME)      |
 | RABBITMQ_QOS_PREFETCH_COUNT          | RabbitMQ QoS prefetch count (defaults to 0)                        |
-| MESSAGE_BUFFER_LENGTH                | Buffer length for internal golang channel used for messaging       |
-| ACK_BUFFER_LENGTH                    | Buffer length for internal golang channel used for acks            |
+
+#### Write Adapters
+
+##### Elasticsearch
+
+| Name                                 | Value                                                              |
+| ------------------------------------ | ------------------------------------------------------------------ |
+| ELASTICSEARCH_URL                    | Elasticsearch url string                                           |
+| ELASTICSEARCH_FLUSH_MAX_SIZE         | Elasticsearch flush to bulk API maximum size                       |
+| ELASTICSEARCH_FLUSH_MAX_INTERVAL_MS  | Elasticsearch flush to bulk API max interval time, in milliseconds |
 
 ### Development
 

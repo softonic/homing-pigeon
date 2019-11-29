@@ -58,18 +58,25 @@ Running the binary file will start up listen interface.
 $ ./homing-pigeon
 ```
 
+#### Docker
+
+[Helm chart](https://github.com/softonic/homing-pigeon-char) is available for easy deployment in k8s.
+
+All release are available also through a [docker image](https://hub.docker.com/r/softonic/homing-pigeon).
+
+#### Environment variables
 In order to start up correctly, it needs well defined environment variables:
 
-#### Core
+##### Core
 
 | Name                                 | Value                                                              |
 | ------------------------------------ | ------------------------------------------------------------------ |
 | MESSAGE_BUFFER_LENGTH                | Buffer length for internal golang channel used for messaging       |
 | ACK_BUFFER_LENGTH                    | Buffer length for internal golang channel used for acks            |
 
-#### Read Adapters
+##### Read Adapters
 
-##### RabbitMQ
+###### RabbitMQ
 
 | Name                                 | Value                                                              |
 | ------------------------------------ | ------------------------------------------------------------------ |
@@ -81,15 +88,16 @@ In order to start up correctly, it needs well defined environment variables:
 | RABBITMQ_CONSUMER_NAME               | Name for RabbitMQ's consumer (optional, defaults to HOSTNAME)      |
 | RABBITMQ_QOS_PREFETCH_COUNT          | RabbitMQ QoS prefetch count (defaults to 0)                        |
 
-#### Write Adapters
+##### Write Adapters
 
-##### Elasticsearch
+###### Elasticsearch
 
 | Name                                 | Value                                                              |
 | ------------------------------------ | ------------------------------------------------------------------ |
 | ELASTICSEARCH_URL                    | Elasticsearch url string                                           |
 | ELASTICSEARCH_FLUSH_MAX_SIZE         | Elasticsearch flush to bulk API maximum size                       |
 | ELASTICSEARCH_FLUSH_MAX_INTERVAL_MS  | Elasticsearch flush to bulk API max interval time, in milliseconds |
+
 
 ### Development
 

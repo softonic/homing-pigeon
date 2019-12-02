@@ -20,11 +20,17 @@ import (
 var Container = []dingo.Def{
 	{
 		Name: "Reader",
-		Build: &readers.Reader{},
+		Build:  func(msgChannel chan messages.Message, ackChannel chan messages.Ack, readAdapter readAdapters.ReadAdapter ) (*readers.Reader, error) {
+			return &readers.Reader{
+				ReadAdapter: readAdapter,
+				MsgChannel:  msgChannel,
+				AckChannel:  ackChannel,
+			}, nil
+		},
 		Params: dingo.Params{
-			"MsgChannel": dingo.Service("MsgChannel"),
-			"AckChannel": dingo.Service("AckChannel"),
-			"ReadAdapter": dingo.Service("AmqpAdapter"),
+			"0": dingo.Service("MsgChannel"),
+			"1": dingo.Service("AckChannel"),
+			"2": dingo.Service("AmqpAdapter"),
 		},
 	},
 	{
@@ -160,11 +166,18 @@ var Container = []dingo.Def{
 	},
 	{
 		Name: "Writer",
-		Build: &writers.Writer{},
+		Build: func(msgChannel chan messages.Message, ackChannel chan messages.Ack, writeAdapter writeAdapters.WriteAdapter ) (*writers.Writer, error) {
+
+			return &writers.Writer{
+				MsgChannel:   msgChannel,
+				AckChannel:   ackChannel,
+				WriteAdapter: writeAdapter,
+			}, nil
+		},
 		Params: dingo.Params{
-			"MsgChannel": dingo.Service("MsgChannel"),
-			"AckChannel": dingo.Service("AckChannel"),
-			"WriteAdapter": dingo.Service("ElasticsearchAdapter"),
+			"0": dingo.Service("MsgChannel"),
+			"1": dingo.Service("AckChannel"),
+			"2": dingo.Service("ElasticsearchAdapter"),
 		},
 	},
 
@@ -209,24 +222,24 @@ var Container = []dingo.Def{
 	},
 	{
 		Name: "MsgChannel",
-		Build: func() (*chan messages.Message, error) {
+		Build: func() (chan messages.Message, error) {
 			bufLen, err := strconv.Atoi(os.Getenv("MESSAGE_BUFFER_LENGTH"))
 			if err != nil {
 				bufLen = 0
 			}
 			c := make(chan messages.Message, bufLen)
-			return &c, nil
+			return c, nil
 		},
 	},
 	{
 		Name: "AckChannel",
-		Build: func() (*chan messages.Ack, error) {
+		Build: func() (chan messages.Ack, error) {
 			bufLen, err := strconv.Atoi(os.Getenv("ACK_BUFFER_LENGTH"))
 			if err != nil {
 				bufLen = 0
 			}
 			c := make(chan messages.Ack, bufLen)
-			return &c, nil
+			return c, nil
 		},
 	},
 }

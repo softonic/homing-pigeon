@@ -29,15 +29,15 @@ func (_m *WriteAdapter) GetTimeout() time.Duration {
 }
 
 // ProcessMessages provides a mock function with given fields: msgs
-func (_m *WriteAdapter) ProcessMessages(msgs []*messages.Message) []*messages.Ack {
+func (_m *WriteAdapter) ProcessMessages(msgs []messages.Message) []messages.Ack {
 	ret := _m.Called(msgs)
 
-	var r0 []*messages.Ack
-	if rf, ok := ret.Get(0).(func([]*messages.Message) []*messages.Ack); ok {
+	var r0 []messages.Ack
+	if rf, ok := ret.Get(0).(func([]messages.Message) []messages.Ack); ok {
 		r0 = rf(msgs)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*messages.Ack)
+			r0 = ret.Get(0).([]messages.Ack)
 		}
 	}
 
@@ -45,11 +45,11 @@ func (_m *WriteAdapter) ProcessMessages(msgs []*messages.Message) []*messages.Ac
 }
 
 // ShouldProcess provides a mock function with given fields: msgs
-func (_m *WriteAdapter) ShouldProcess(msgs []*messages.Message) bool {
+func (_m *WriteAdapter) ShouldProcess(msgs []messages.Message) bool {
 	ret := _m.Called(msgs)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func([]*messages.Message) bool); ok {
+	if rf, ok := ret.Get(0).(func([]messages.Message) bool); ok {
 		r0 = rf(msgs)
 	} else {
 		r0 = ret.Get(0).(bool)

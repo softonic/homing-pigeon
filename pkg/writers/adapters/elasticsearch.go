@@ -16,8 +16,8 @@ type Elasticsearch struct{
 	Bulk          esapi.Bulk
 }
 
-func (es *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.Ack {
-	acks := make([]*messages.Ack, len(msgs))
+func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack {
+	acks := make([]messages.Ack, len(msgs))
 
 	if len(msgs) == 0 {
 		return acks
@@ -28,7 +28,7 @@ func (es *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.A
 	for i, msg := range msgs {
 		body, err := es.decodeBody(msg.Body)
 		if err != nil {
-			log.Printf("Invalid Message: %v", *msg)
+			log.Printf("Invalid Message: %v", msg)
 			nack, err := msg.Nack()
 			if err != nil {
 				log.Fatal(err)
@@ -59,13 +59,13 @@ func (es *Elasticsearch) ProcessMessages(msgs []*messages.Message) []*messages.A
 	return acks
 }
 
-func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBulkResponse, msgs []*messages.Message, acks []*messages.Ack) {
+func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBulkResponse, msgs []messages.Message, acks []messages.Ack) {
 	log.Printf("Result: %v", response)
 	maxValidStatus := 299
 
 	responseItemPos := 0
 	for ackPos, ack := range acks {
-		if ack != nil {
+		if ack.Id != nil {
 			continue
 		}
 
@@ -75,13 +75,13 @@ func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBul
 			status := int(values["status"].(float64))
 
 			if status > maxValidStatus {
-				log.Printf("NACK: %v", *msgs[ackPos])
+				log.Printf("NACK: %v", msgs[ackPos])
 				ack, err := msgs[ackPos].Nack()
 				if err == nil {
 					acks[ackPos] = ack
 				}
 			} else {
-				log.Printf("ACK: %v", *msgs[ackPos])
+				log.Printf("ACK: %v", msgs[ackPos])
 				ack, err := msgs[ackPos].Ack()
 				if err == nil {
 					acks[ackPos] = ack
@@ -102,7 +102,7 @@ func (es *Elasticsearch) getResponseFromResult(result *esapi.Response) esAdapter
 	return response
 }
 
-func (es *Elasticsearch) setAllNacks(msgs []*messages.Message, acks []*messages.Ack) {
+func (es *Elasticsearch) setAllNacks(msgs []messages.Message, acks []messages.Ack) {
 	for i, msg := range msgs {
 		nack, err := msg.Nack()
 		if err == nil {
@@ -130,7 +130,7 @@ func (es *Elasticsearch) writeToBuffer(buf *bytes.Buffer, body esAdapter.Elastic
 	return nil
 }
 
-func (es *Elasticsearch) ShouldProcess(msgs []*messages.Message) bool {
+func (es *Elasticsearch) ShouldProcess(msgs []messages.Message) bool {
 	return len(msgs) >= es.FlushMaxSize
 }
 

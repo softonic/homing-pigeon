@@ -25,14 +25,14 @@ func TestProcessMessage(t *testing.T) {
 		Body:        []byte("Hello!"),
 	}
 
-	go obj.Listen(&msgChannel)
+	go obj.Listen(msgChannel)
 
 	assert.Eventually(
 		t,
 		func() bool {
 			return assert.Len(t, msgChannel, expectedMessages)
 		},
-		time.Millisecond*10,
+		time.Millisecond*500,
 		time.Millisecond,
 	)
 
@@ -60,7 +60,7 @@ func TestHandleAck(t *testing.T) {
 		Ack: true,
 	}
 
-	go obj.HandleAck(&ackChannel)
+	go obj.HandleAck(ackChannel)
 
 	assert.Eventually(
 		t,
@@ -91,7 +91,7 @@ func TestHandleNack(t *testing.T) {
 		Ack: false,
 	}
 
-	go obj.HandleAck(&ackChannel)
+	go obj.HandleAck(ackChannel)
 
 	assert.Eventually(
 		t,
@@ -129,7 +129,7 @@ func TestHandleMixedAcks(t *testing.T) {
 		Ack: false,
 	}
 
-	go obj.HandleAck(&ackChannel)
+	go obj.HandleAck(ackChannel)
 
 	assert.Eventually(
 		t,

@@ -12,7 +12,7 @@ func TestProduceMessageQuantity(t *testing.T) {
 	msgChannel := make(chan messages.Message, expectedMessages+1)
 
 	obj := new(Dummy)
-	obj.Listen(&msgChannel)
+	obj.Listen(msgChannel)
 
 	assert.Len(t, msgChannel, expectedMessages)
 }
@@ -20,12 +20,12 @@ func TestProduceMessageQuantity(t *testing.T) {
 func TestAcksAreRead(t *testing.T) {
 	ackChannel := make(chan messages.Ack, 2)
 	ackChannel <- messages.Ack{
-		Id: 1,
+		Id: uint64(1),
 		Ack: true,
 	}
 
 	obj := new(Dummy)
-	go obj.HandleAck(&ackChannel)
+	go obj.HandleAck(ackChannel)
 
 	assert.Eventually(t, func() bool {
 		return assert.Empty(t, ackChannel)

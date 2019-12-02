@@ -6,7 +6,7 @@ import (
 )
 
 type WriteAdapter interface {
-	ProcessMessages(msgs []*messages.Message) []*messages.Ack
-	ShouldProcess(msgs []*messages.Message) bool
+	ProcessMessages(msgs []messages.Message) []messages.Ack
+	ShouldProcess(msgs []messages.Message) bool
 	GetTimeout() time.Duration
 }

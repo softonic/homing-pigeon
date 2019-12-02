@@ -43,7 +43,7 @@ func TestAdapterReceiveInvalidMessage(t *testing.T) {
 		Bulk:          bulk.getBulkFunc(),
 	}
 
-	acks := esAdapter.ProcessMessages([]*messages.Message{
+	acks := esAdapter.ProcessMessages([]messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ Invalid Json }"),
@@ -70,7 +70,7 @@ func TestBulkActionWithErrorsMustDiscardAllMessages(t *testing.T) {
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
-	acks := esAdapter.ProcessMessages([]*messages.Message{
+	acks := esAdapter.ProcessMessages([]messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ \"valid\": \"json\" }"),
@@ -97,7 +97,7 @@ func TestBulkActionWithSingleItemSucessful(t *testing.T) {
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
-	acks := esAdapter.ProcessMessages([]*messages.Message{
+	acks := esAdapter.ProcessMessages([]messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ \"valid\": \"json\" }"),
@@ -124,7 +124,7 @@ func TestBulkActionWithSingleItemUnsuccessful(t *testing.T) {
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
-	acks := esAdapter.ProcessMessages([]*messages.Message{
+	acks := esAdapter.ProcessMessages([]messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ \"valid\": \"json\" }"),
@@ -152,7 +152,7 @@ func TestBulkActionWithMixedItemStatus(t *testing.T) {
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
-	acks := esAdapter.ProcessMessages([]*messages.Message{
+	acks := esAdapter.ProcessMessages([]messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ \"valid\": \"json\" }"),

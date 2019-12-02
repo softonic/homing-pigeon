@@ -3,30 +3,30 @@ package messages
 import "errors"
 
 type Message struct {
-	Id uint64
+	Id interface{}
 	Body []byte
 	acked bool
 }
 
-func (m Message) Nack() (*Ack, error) {
+func (m Message) Nack() (Ack, error) {
 	err := m.setAsAcked()
 	if err != nil {
-		return nil, err
+		return Ack{}, err
 	}
 
-	return &Ack{
+	return Ack{
 		Id:  m.Id,
 		Ack: false,
 	}, nil
 }
 
-func (m Message) Ack() (*Ack, error){
+func (m Message) Ack() (Ack, error){
 	err := m.setAsAcked()
 	if err != nil {
-		return nil, err
+		return Ack{}, err
 	}
 
-	return &Ack{
+	return Ack{
 		Id:  m.Id,
 		Ack: true,
 	}, nil

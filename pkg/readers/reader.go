@@ -7,8 +7,8 @@ import (
 
 type Reader struct {
 	ReadAdapter adapters.ReadAdapter
-	MsgChannel  *chan messages.Message
-	AckChannel  *chan messages.Ack
+	MsgChannel  chan<- messages.Message
+	AckChannel  <-chan messages.Ack
 }
 
 func (r *Reader) Start() {

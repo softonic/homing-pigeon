@@ -17,7 +17,6 @@ func TestAdapterProcessSingleMessage(t *testing.T) {
 
 	mockProcessMessages(writeAdapter)
 
-
 	msgChannel := make(chan messages.Message, 1)
 	ackChannel := make(chan messages.Ack, 1)
 
@@ -132,9 +131,9 @@ func writeMessagesToChannel(msgChannel *chan messages.Message) {
 
 func getAcks(n int) []messages.Ack {
 	acks := make([]messages.Ack, n)
-	for i := 0; i<n; i++ {
+	for i := 0; i < n; i++ {
 		acks[i] = messages.Ack{
-			Id: uint64(i),
+			Id:  uint64(i),
 			Ack: false,
 		}
 	}

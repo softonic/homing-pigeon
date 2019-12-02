@@ -8,4 +8,6 @@ type Config struct {
 	QueueName               string
 	QosPrefetchCount        int
 	ConsumerName            string
+	ExchangeType            string
+	QueueBindingKey         string
 }

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/sarulabs/dingo"
@@ -11,9 +12,11 @@ import (
 	"github.com/softonic/homing-pigeon/pkg/writers"
 	writeAdapters "github.com/softonic/homing-pigeon/pkg/writers/adapters"
 	"github.com/streadway/amqp"
+	"html/template"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -86,7 +89,7 @@ var Container = []dingo.Def{
 
 			err = ch.ExchangeDeclare(
 				config.ExchangeName,
-				"fanout",
+				config.ExchangeType,
 				true,
 				false,
 				false,
@@ -107,7 +110,7 @@ var Container = []dingo.Def{
 
 			err = ch.QueueBind(
 				q.Name,
-				"#",
+				config.QueueBindingKey,
 				config.ExchangeName,
 				false,
 				nil,
@@ -154,11 +157,13 @@ var Container = []dingo.Def{
 			}
 
 			return amqpAdapter.Config{
-				Url:                     os.Getenv("RABBITMQ_URL"),
-				DeadLettersExchangeName: os.Getenv("RABBITMQ_DLX_NAME"),
-				DeadLettersQueueName:    os.Getenv("RABBITMQ_DLX_QUEUE_NAME"),
-				ExchangeName:            os.Getenv("RABBITMQ_EXCHANGE_NAME"),
-				QueueName:               os.Getenv("RABBITMQ_QUEUE_NAME"),
+				Url:                     getEnv("RABBITMQ_URL", ""),
+				DeadLettersExchangeName: getEnv("RABBITMQ_DLX_NAME", ""),
+				DeadLettersQueueName:    getEnv("RABBITMQ_DLX_QUEUE_NAME", ""),
+				ExchangeName:            getEnv("RABBITMQ_EXCHANGE_NAME", ""),
+				ExchangeType:            getEnv("RABBITMQ_EXCHANGE_TYPE", "fanout"),
+				QueueName:               getQueueName(),
+				QueueBindingKey:         getEnv("RABBITMQ_QUEUE_BINDING_KEY", "#"),
 				QosPrefetchCount:        qosPrefetchCount,
 				ConsumerName:            consumerName,
 			}, nil
@@ -166,7 +171,7 @@ var Container = []dingo.Def{
 	},
 	{
 		Name: "Writer",
-		Build: func(msgChannel chan messages.Message, ackChannel chan messages.Ack, writeAdapter writeAdapters.WriteAdapter ) (*writers.Writer, error) {
+		Build: func(msgChannel chan messages.Message, ackChannel chan messages.Ack, writeAdapter writeAdapters.WriteAdapter) (*writers.Writer, error) {
 
 			return &writers.Writer{
 				MsgChannel:   msgChannel,
@@ -205,7 +210,7 @@ var Container = []dingo.Def{
 	},
 	{
 		Name: "ElasticsearchBulkClient",
-		Build: func() (esapi.Bulk, error){
+		Build: func() (esapi.Bulk, error) {
 			es, err := elasticsearch.NewClient(elasticsearch.Config{})
 			if err != nil {
 				return nil, err
@@ -242,4 +247,47 @@ var Container = []dingo.Def{
 			return c, nil
 		},
 	},
+}
+
+func getQueueName() string {
+	data := struct {
+		ConsumerId string
+	}{
+		getConsumerId(),
+	}
+
+	tpl := template.New("queueName")
+	tpl, err := tpl.Parse(getEnv("RABBITMQ_QUEUE_NAME", ""))
+	if err != nil {
+		log.Fatalf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
+	}
+	var buf bytes.Buffer
+	err = tpl.Execute(&buf, data)
+	if err != nil {
+		log.Fatalf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
+	}
+	queueName := buf.String()
+	return queueName
+}
+
+func getConsumerId() string {
+	consumerIdString := os.Getenv("CONSUMER_ID")
+	if consumerIdString == "" {
+		// Work out consumer ID based on hostname: useful for k8s resources (pods controlled by deployment, statefulset)
+		hostname, err := os.Hostname()
+		if err != nil {
+			log.Fatalf("Could not set ConsumerID: %v", err)
+		}
+		pos := strings.LastIndex(hostname, "-")
+		consumerIdString = hostname[pos+1:]
+	}
+	return consumerIdString
+}
+
+func getEnv(envVarName string, defaultValue string) string {
+	value := os.Getenv(envVarName)
+	if value != "" {
+		return value
+	}
+	return defaultValue
 }

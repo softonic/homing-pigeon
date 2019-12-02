@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
+
 	container, err := dic.NewContainer(dingo.App)
 	if err != nil {
 		panic(err)

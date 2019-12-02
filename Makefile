@@ -14,4 +14,4 @@ mock:
 	mockery -name=Channel -recursive
 	mockery -name=Connection -recursive
 test:
-	gotest ./... -v
+	gotest -race -count=1 ./... -v

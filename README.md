@@ -60,7 +60,7 @@ $ ./homing-pigeon
 
 #### Docker
 
-[Helm chart](https://github.com/softonic/homing-pigeon-char) is available for easy deployment in k8s.
+[Helm chart](https://github.com/softonic/homing-pigeon-chart) is available for easy deployment in k8s.
 
 All release are available also through a [docker image](https://hub.docker.com/r/softonic/homing-pigeon).
 

@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"bytes"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/stretchr/testify/assert"
@@ -23,8 +24,9 @@ type BulkMock struct {
 
 func (b *BulkMock) getBulkFunc() esapi.Bulk {
 	return func(body io.Reader, o ...func(*esapi.BulkRequest)) (*esapi.Response, error) {
-		args := b.Called(body)
-
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(body)
+		args := b.Called(buf.String())
 		var err error
 		err = nil
 		if args.Get(1) != nil {
@@ -172,4 +174,53 @@ func TestBulkActionWithMixedItemStatus(t *testing.T) {
 	assert.False(t, acks[0].Ack)
 	assert.True(t, acks[1].Ack)
 	assert.False(t, acks[2].Ack)
+}
+
+func TestBulkActionWithOnlyMetadata(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:  0,
+		FlushInterval: 0,
+		Bulk:          bulk.getBulkFunc(),
+	}
+
+	response := esapi.Response{
+		StatusCode: 201,
+		Header:     nil,
+		Body:       ioutil.NopCloser(strings.NewReader("{\"errors\":false,\"items\":[{\"delete\":{\"status\":200}}]}")),
+	}
+	expectedBody := "{\"delete\":{\"_id\":\"123\"}}\n"
+	bulk.On("func1", expectedBody).Once().Return(&response, nil)
+
+	acks := esAdapter.ProcessMessages([]messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"meta\": {\"delete\": {\"_id\":\"123\"}} }"),
+		},
+	})
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, acks, 1)
+	assert.True(t, acks[0].Ack)
+}
+
+func TestBulkActionWithNoMetadata(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:  0,
+		FlushInterval: 0,
+		Bulk:          bulk.getBulkFunc(),
+	}
+
+	acks := esAdapter.ProcessMessages([]messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"foobar\": {\"delete\": {\"_id\":\"123\"}} }"),
+		},
+	})
+
+	bulk.AssertNotCalled(t, "func1", mock.Anything)
+	bulk.AssertExpectations(t)
+	assert.Len(t, acks, 1)
+	assert.False(t, acks[0].Ack)
 }

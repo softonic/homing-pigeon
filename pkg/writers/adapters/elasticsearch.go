@@ -3,6 +3,7 @@ package adapters
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	esAdapter "github.com/softonic/homing-pigeon/pkg/writers/adapters/elasticsearch"
@@ -45,7 +46,6 @@ func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack
 	if buf.Len() == 0 {
 		return acks
 	}
-
 	result, err := es.Bulk(bytes.NewReader(buf.Bytes()))
 	if err != nil || result.IsError() {
 		log.Printf("Error in bulk action, %v", err)
@@ -116,14 +116,19 @@ func (es *Elasticsearch) writeToBuffer(buf *bytes.Buffer, body esAdapter.Elastic
 	if err != nil {
 		return err
 	}
+	if bytes.Compare(meta, []byte("null")) == 0 {
+		return errors.New("Invalid body: meta should be present")
+	}
 	data, err := json.Marshal(body.Data)
 	if err != nil {
 		return err
 	}
 
 	payload := append(meta, "\n"...)
-	payload = append(payload, data...)
-	payload = append(payload, "\n"...)
+	if bytes.Compare(data, []byte("null")) != 0 {
+		payload = append(payload, data...)
+		payload = append(payload, "\n"...)
+	}
 
 	buf.Write(payload)
 

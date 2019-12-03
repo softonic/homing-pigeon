@@ -75,7 +75,7 @@ func TestBulkActionWithErrorsMustDiscardAllMessages(t *testing.T) {
 	acks := esAdapter.ProcessMessages([]messages.Message{
 		{
 			Id:   0,
-			Body: []byte("{ \"valid\": \"json\" }"),
+			Body: []byte("{ \"meta\": \"valid-json\" }"),
 		},
 	})
 
@@ -102,7 +102,7 @@ func TestBulkActionWithSingleItemSucessful(t *testing.T) {
 	acks := esAdapter.ProcessMessages([]messages.Message{
 		{
 			Id:   0,
-			Body: []byte("{ \"valid\": \"json\" }"),
+			Body: []byte("{ \"meta\": \"valid-json\" }"),
 		},
 	})
 
@@ -129,7 +129,7 @@ func TestBulkActionWithSingleItemUnsuccessful(t *testing.T) {
 	acks := esAdapter.ProcessMessages([]messages.Message{
 		{
 			Id:   0,
-			Body: []byte("{ \"valid\": \"json\" }"),
+			Body: []byte("{ \"meta\": \"valid-json\" }"),
 		},
 	})
 
@@ -157,15 +157,15 @@ func TestBulkActionWithMixedItemStatus(t *testing.T) {
 	acks := esAdapter.ProcessMessages([]messages.Message{
 		{
 			Id:   0,
-			Body: []byte("{ \"valid\": \"json\" }"),
+			Body: []byte("{ \"meta\": \"valid-json\" }"),
 		},
 		{
 			Id:   1,
-			Body: []byte("{ \"valid\": \"json\" }"),
+			Body: []byte("{ \"meta\": \"valid-json\" }"),
 		},
 		{
 			Id:   2,
-			Body: []byte("{ \"valid\": \"json\" }"),
+			Body: []byte("{ \"meta\": \"valid-json\" }"),
 		},
 	})
 

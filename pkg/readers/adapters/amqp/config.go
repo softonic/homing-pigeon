@@ -10,6 +10,7 @@ type Config struct {
 	ConsumerName            string
 	ExchangeType            string
 	QueueBindingKey         string
-	ExchangeBindingName     string
-	ExchangeBindingKey      string
+	OuterExchangeName       string
+	OuterExchangeBindingKey string
+	OuterExchangeType       string
 }

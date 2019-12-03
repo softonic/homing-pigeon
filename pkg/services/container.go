@@ -69,11 +69,11 @@ var Container = []dingo.Def{
 			failOnError(err, "Failed to declare dead letter exchange")
 
 			dq, err := ch.QueueDeclare(
-				config.DeadLettersQueueName, // name
-				false,                       // durable
-				false,                       // delete when unused
-				false,                       // exclusive
-				false,                       // no-wait
+				config.DeadLettersQueueName,
+				false,
+				false,
+				false,
+				false,
 				nil,
 			)
 			failOnError(err, "Failed to declare dead letter queue")
@@ -105,21 +105,32 @@ var Container = []dingo.Def{
 			)
 			failOnError(err, "Failed to declare exchange")
 
-			if config.ExchangeBindingName != "" {
-				ch.ExchangeBind(
-					config.ExchangeBindingName,
-					config.ExchangeBindingKey,
+			if config.OuterExchangeName != "" {
+				err = ch.ExchangeDeclare(
+					config.OuterExchangeName,
+					config.OuterExchangeType,
+					true,
+					false,
+					false,
+					false,
+					nil,
+				)
+				failOnError(err, "Failed to declare outer exchange")
+				err = ch.ExchangeBind(
+					config.OuterExchangeName,
+					config.OuterExchangeBindingKey,
 					config.ExchangeName,
 					false,
 					nil,
 				)
+				failOnError(err, "Failed to bind outer exchange")
 			}
 			q, err := ch.QueueDeclare(
-				config.QueueName, // name
-				false,            // durable
-				false,            // delete when unused
-				false,            // exclusive
-				false,            // no-wait
+				config.QueueName,
+				false,
+				false,
+				false,
+				false,
 				amqp.Table{"x-dead-letter-exchange": config.DeadLettersExchangeName},
 			)
 			failOnError(err, "Failed to declare queue")
@@ -137,12 +148,12 @@ var Container = []dingo.Def{
 			failOnError(err, "Failed setting Qos")
 
 			msgs, err := ch.Consume(
-				q.Name,              // queue
-				config.ConsumerName, // consumer
-				false,               // auto-ack
-				false,               // exclusive
-				false,               // no-local
-				false,               // no-wait
+				q.Name,
+				config.ConsumerName,
+				false,
+				false,
+				false,
+				false,
 				nil,
 			)
 			if err != nil {
@@ -166,8 +177,8 @@ var Container = []dingo.Def{
 			getEnv := func(envVarName string, defaultValue string) string {
 				value := os.Getenv(envVarName)
 				if value != "" {
-				return value
-			}
+					return value
+				}
 				return defaultValue
 			}
 
@@ -218,8 +229,9 @@ var Container = []dingo.Def{
 				DeadLettersQueueName:    getEnv("RABBITMQ_DLX_QUEUE_NAME", ""),
 				ExchangeName:            getEnv("RABBITMQ_EXCHANGE_NAME", ""),
 				ExchangeType:            getEnv("RABBITMQ_EXCHANGE_TYPE", "fanout"),
-				ExchangeBindingName:     getEnv("RABBITMQ_EXCHANGE_BINDING_NAME", ""),
-				ExchangeBindingKey:      getEnv("RABBITMQ_EXCHANGE_BINDING_KEY", ""),
+				OuterExchangeName:       getEnv("RABBITMQ_OUTER_EXCHANGE_NAME", ""),
+				OuterExchangeType:       getEnv("RABBITMQ_OUTER_EXCHANGE_TYPE", ""),
+				OuterExchangeBindingKey: getEnv("RABBITMQ_OUTER_EXCHANGE_BINDING_KEY", ""),
 				QueueName:               queueName,
 				QueueBindingKey:         getEnv("RABBITMQ_QUEUE_BINDING_KEY", "#"),
 				QosPrefetchCount:        qosPrefetchCount,

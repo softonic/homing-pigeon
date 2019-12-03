@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  homing-pigeon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: softonic/homing-pigeon:dev
+    environment:
+      ELASTICSEARCH_URL: "http://elasticsearch:9200"
+      ELASTICSEARCH_FLUSH_MAX_SIZE: "250"
+      ELASTICSEARCH_FLUSH_MAX_INTERVAL_MS: "5000"
+      RABBITMQ_URL: "amqp://guest:guest@rabbit-mq:5672"
+      RABBITMQ_DLX_NAME: "dead-letters"
+      RABBITMQ_DLX_QUEUE_NAME: "dead-letters"
+      RABBITMQ_EXCHANGE_NAME: "homing-pigeon"
+      RABBITMQ_EXCHANGE_TYPE: "fanout"
+      RABBITMQ_QUEUE_NAME: "messages"
+      RABBITMQ_QUEUE_BINDING_KEY: "#"
+      RABBITMQ_QOS_PREFETCH_COUNT: "1000"
+      MESSAGE_BUFFER_LENGTH: "1000"
+      ACK_BUFFER_LENGTH: "500"
+  rabbit-mq:
+    image: rabbitmq:3.8-management
+    ports:
+      - 15672:15672
+      - 5672:5672
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.4.2
+    ports:
+      - 9200:9200
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=pigeon
+      - bootstrap.memory_lock=true
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=elasticsearch
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1

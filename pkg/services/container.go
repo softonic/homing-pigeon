@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/sarulabs/dingo"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/readers"
@@ -134,9 +133,9 @@ var Container = []dingo.Def{
 				)
 				failOnError(err, "Failed to declare outer exchange")
 				err = ch.ExchangeBind(
-					config.OuterExchangeName,
-					config.OuterExchangeBindingKey,
 					config.ExchangeName,
+					config.OuterExchangeBindingKey,
+					config.OuterExchangeName,
 					false,
 					nil,
 				)
@@ -275,7 +274,7 @@ var Container = []dingo.Def{
 
 	{
 		Name: "ElasticsearchAdapter",
-		Build: func(bulk esapi.Bulk) (writeAdapters.WriteAdapter, error) {
+		Build: func() (writeAdapters.WriteAdapter, error) {
 			flushMaxSize, err := strconv.Atoi(os.Getenv("ELASTICSEARCH_FLUSH_MAX_SIZE"))
 			if err != nil {
 				flushMaxSize = 1
@@ -285,25 +284,16 @@ var Container = []dingo.Def{
 			if err != nil {
 				flushMaxIntervalMs = 1000
 			}
-			return &writeAdapters.Elasticsearch{
-				FlushMaxSize:  flushMaxSize,
-				FlushInterval: time.Duration(flushMaxIntervalMs) * time.Millisecond,
-				Bulk:          bulk,
-			}, nil
-		},
-		Params: dingo.Params{
-			"0": dingo.Service("ElasticsearchBulkClient"),
-		},
-	},
-	{
-		Name: "ElasticsearchBulkClient",
-		Build: func() (esapi.Bulk, error) {
+
 			es, err := elasticsearch.NewClient(elasticsearch.Config{})
 			if err != nil {
 				return nil, err
 			}
-
-			return es.Bulk, nil
+			return &writeAdapters.Elasticsearch{
+				FlushMaxSize:  flushMaxSize,
+				FlushInterval: time.Duration(flushMaxIntervalMs) * time.Millisecond,
+				Bulk:          es.Bulk,
+			}, nil
 		},
 	},
 	{

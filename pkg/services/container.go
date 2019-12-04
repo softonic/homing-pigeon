@@ -61,6 +61,7 @@ var Container = []dingo.Def{
 				cfg.RootCAs = x509.NewCertPool()
 				if ca, err := ioutil.ReadFile(caPath); err == nil {
 					cfg.RootCAs.AppendCertsFromPEM(ca)
+					log.Printf("Added CA certificate %s", caPath)
 				}
 				conn, err = amqp.DialTLS(config.Url, cfg)
 			} else {

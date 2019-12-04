@@ -2,6 +2,8 @@ package services
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/sarulabs/dingo"
@@ -13,6 +15,7 @@ import (
 	writeAdapters "github.com/softonic/homing-pigeon/pkg/writers/adapters"
 	"github.com/streadway/amqp"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -50,8 +53,21 @@ var Container = []dingo.Def{
 					log.Fatalf("%s: %s", msg, err)
 				}
 			}
+			var err error
+			var conn *amqp.Connection
+			caPath := os.Getenv("RABBITMQ_CA_PATH")
+			if caPath != "" {
+				cfg := new(tls.Config)
+				cfg.RootCAs = x509.NewCertPool()
+				if ca, err := ioutil.ReadFile(caPath); err == nil {
+					cfg.RootCAs.AppendCertsFromPEM(ca)
+				}
+				conn, err = amqp.DialTLS(config.Url, cfg)
+			} else {
+				conn, err = amqp.Dial(config.Url)
 
-			conn, err := amqp.Dial(config.Url)
+			}
+			failOnError(err, "Failed to connect to RabbitMQ")
 			failOnError(err, "Failed to connect to RabbitMQ")
 
 			ch, err := conn.Channel()

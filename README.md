@@ -84,6 +84,7 @@ In order to start up correctly, it needs well defined environment variables:
 | RABBITMQ_DLX_NAME                    | RabbitMQ dead letters exchange name                                |
 | RABBITMQ_DLX_QUEUE_NAME              | RabbitMQ dead letters exchange's queue name                        |
 | RABBITMQ_EXCHANGE_NAME               | RabbitMQ messaging exchange name                                   |
+| RABBITMQ_EXCHANGE_TYPE               | RabbitMQ messaging exchange type                                   |
 | RABBITMQ_EXCHANGE_INTERNAL           | Whether RabbitMQ messaging exchange is internal                    |
 | RABBITMQ_OUTER_EXCHANGE_NAME         | RabbitMQ outer exchange name                                       |
 | RABBITMQ_OUTER_EXCHANGE_TYPE         | RabbitMQ outer exchange type                                       |

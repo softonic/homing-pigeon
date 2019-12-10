@@ -2,6 +2,8 @@ version: '3.7'
 
 services:
   homing-pigeon:
+    volumes:
+    - ./sockets:/tmp
     build:
       context: .
       dockerfile: Dockerfile
@@ -20,6 +22,16 @@ services:
       RABBITMQ_QOS_PREFETCH_COUNT: "1000"
       MESSAGE_BUFFER_LENGTH: "1000"
       ACK_BUFFER_LENGTH: "500"
+      GRPC_GO_LOG_VERBOSITY_LEVEL: 99
+      GRPC_GO_LOG_SEVERITY_LEVEL: info
+  hp-middleware-pass:
+    volumes:
+      - ./sockets:/tmp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: softonic/homing-pigeon:dev
+    entrypoint: ["/pass-middleware"]
   rabbit-mq:
     image: rabbitmq:3.8-management
     ports:

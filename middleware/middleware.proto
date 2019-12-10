@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.softonic.homingpigeon.middleware";
+option java_outer_classname = "Middleware";
+
+package middleware;
+
+// Middleware interface.
+service Middleware {
+
+    // Transform the given data and return it.
+    rpc transform(Data) returns (Data) {}
+
+}
+
+// Data is represented with an unique ID and the body that contains the actual data.
+message Data {
+    bytes Body = 1;
+}
+

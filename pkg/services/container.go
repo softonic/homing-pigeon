@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/sarulabs/dingo"
 	"github.com/softonic/homing-pigeon/pkg/messages"
+	"github.com/softonic/homing-pigeon/pkg/middleware"
 	"github.com/softonic/homing-pigeon/pkg/readers"
 	readAdapters "github.com/softonic/homing-pigeon/pkg/readers/adapters"
 	amqpAdapter "github.com/softonic/homing-pigeon/pkg/readers/adapters/amqp"
@@ -25,15 +26,15 @@ import (
 var Container = []dingo.Def{
 	{
 		Name: "Reader",
-		Build: func(msgChannel chan messages.Message, ackChannel chan messages.Ack, readAdapter readAdapters.ReadAdapter) (*readers.Reader, error) {
+		Build: func(InputMiddlewareChannel chan messages.Message, ackChannel chan messages.Ack, readAdapter readAdapters.ReadAdapter) (*readers.Reader, error) {
 			return &readers.Reader{
 				ReadAdapter: readAdapter,
-				MsgChannel:  msgChannel,
+				MsgChannel:  InputMiddlewareChannel,
 				AckChannel:  ackChannel,
 			}, nil
 		},
 		Params: dingo.Params{
-			"0": dingo.Service("MsgChannel"),
+			"0": dingo.Service("InputMiddlewareChannel"),
 			"1": dingo.Service("AckChannel"),
 			"2": dingo.Service("AmqpAdapter"),
 		},
@@ -256,17 +257,30 @@ var Container = []dingo.Def{
 		},
 	},
 	{
+		Name: "Middleware",
+		Build: func(InputMiddlewareChannel chan messages.Message, OutputMiddlewareChannel chan messages.Message) (*middleware.Middlware, error) {
+			return &middleware.Middlware{
+				InputChannel:  InputMiddlewareChannel,
+				OutputChannel: OutputMiddlewareChannel,
+				MiddlewareSocket: "unix:////tmp/hp",
+			}, nil
+		},
+		Params: dingo.Params{
+			"0": dingo.Service("InputMiddlewareChannel"),
+			"1": dingo.Service("OutputMiddlewareChannel"),
+		},
+	},
+	{
 		Name: "Writer",
-		Build: func(msgChannel chan messages.Message, ackChannel chan messages.Ack, writeAdapter writeAdapters.WriteAdapter) (*writers.Writer, error) {
-
+		Build: func(OutputMiddlewareChannel chan messages.Message, ackChannel chan messages.Ack, writeAdapter writeAdapters.WriteAdapter) (*writers.Writer, error) {
 			return &writers.Writer{
-				MsgChannel:   msgChannel,
+				MsgChannel:   OutputMiddlewareChannel,
 				AckChannel:   ackChannel,
 				WriteAdapter: writeAdapter,
 			}, nil
 		},
 		Params: dingo.Params{
-			"0": dingo.Service("MsgChannel"),
+			"0": dingo.Service("OutputMiddlewareChannel"),
 			"1": dingo.Service("AckChannel"),
 			"2": dingo.Service("ElasticsearchAdapter"),
 		},
@@ -303,7 +317,18 @@ var Container = []dingo.Def{
 		},
 	},
 	{
-		Name: "MsgChannel",
+		Name: "InputMiddlewareChannel",
+		Build: func() (chan messages.Message, error) {
+			bufLen, err := strconv.Atoi(os.Getenv("MESSAGE_BUFFER_LENGTH"))
+			if err != nil {
+				bufLen = 0
+			}
+			c := make(chan messages.Message, bufLen)
+			return c, nil
+		},
+	},
+	{
+		Name: "OutputMiddlewareChannel",
 		Build: func() (chan messages.Message, error) {
 			bufLen, err := strconv.Atoi(os.Getenv("MESSAGE_BUFFER_LENGTH"))
 			if err != nil {

@@ -29,7 +29,7 @@ func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack
 	for i, msg := range msgs {
 		body, err := es.decodeBody(msg.Body)
 		if err != nil {
-			log.Printf("Invalid Message: %v", msg)
+			log.Printf("Invalid Message: %s", string(msg.Body))
 			nack, err := msg.Nack()
 			if err != nil {
 				log.Fatal(err)
@@ -60,7 +60,6 @@ func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack
 }
 
 func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBulkResponse, msgs []messages.Message, acks []messages.Ack) {
-	log.Printf("Result: %v", response)
 	maxValidStatus := 299
 
 	responseItemPos := 0
@@ -74,14 +73,14 @@ func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBul
 			values := data.(map[string]interface{})
 			status := int(values["status"].(float64))
 
+			log.Printf("Item has invalid status: %v", data)
+
 			if status > maxValidStatus {
-				log.Printf("NACK: %v", msgs[ackPos])
 				ack, err := msgs[ackPos].Nack()
 				if err == nil {
 					acks[ackPos] = ack
 				}
 			} else {
-				log.Printf("ACK: %v", msgs[ackPos])
 				ack, err := msgs[ackPos].Ack()
 				if err == nil {
 					acks[ackPos] = ack

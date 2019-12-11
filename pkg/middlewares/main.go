@@ -27,5 +27,8 @@ func main() {
 	grpcServer := grpc.NewServer(grpc.MaxConcurrentStreams(10))
 	pb.RegisterMiddlewareServer(grpcServer, &MiddlewareServer{})
 
-	grpcServer.Serve(lis)
+	err = grpcServer.Serve(lis)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

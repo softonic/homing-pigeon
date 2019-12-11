@@ -16,25 +16,32 @@ type MiddlewareServer struct {
 	pb.UnimplementedMiddlewareServer
 }
 
-func (m *MiddlewareServer) Handle(ctx context.Context, req *pb.Data) (*pb.Data, error) {
-
-	//log.Printf("Pre-Processing %v", *req)
-	// Do things
-	//---------------------
-
+func (m *MiddlewareServer) next(req *pb.Data) (*pb.Data, error) {
 	resp := req
 	if m.client != nil {
 		var err error
 		resp, err = (*m.client).Handle(context.Background(), req)
-		if err != nil {
-			log.Fatalf("What happens!? %v", err)
-		}
+		return nil, err
 	}
 
-	//log.Printf("Post-Processing %v", *resp)
+	return resp, nil
+}
+
+func (m *MiddlewareServer) Handle(ctx context.Context, req *pb.Data) (*pb.Data, error) {
+
+	log.Printf("Pre-Processing %v", *req)
+	// Do things
+	//---------------------
+	return req, nil
+
+
+
+	resp, err := m.next(req)
+
+	log.Printf("Post-Processing %v", *resp)
 	// Do things
 
-	return resp, nil
+	return resp, err
 }
 
 func main() {
@@ -70,7 +77,7 @@ func main() {
 	}
 }
 
-func getGrpc() (*grpc.ClientConn, *pb.MiddlewareClient){
+func getGrpc() (*grpc.ClientConn, *pb.MiddlewareClient) {
 	nextSocketAddr := getEnv("OUT_SOCKET", "")
 	if nextSocketAddr != "" {
 		var opts []grpc.DialOption

@@ -9,7 +9,7 @@ require (
 	github.com/gobuffalo/packr v1.30.1 // indirect
 	github.com/golang/protobuf v1.3.2
 	github.com/golangci/golangci-lint v1.21.0 // indirect
-	github.com/mattn/go-isatty v0.0.10 // indirect
+	github.com/mattn/go-isatty v0.0.11 // indirect
 	github.com/rakyll/gotest v0.0.0-20191108192113-45d501058f2a // indirect
 	github.com/rogpeppe/go-internal v1.5.0 // indirect
 	github.com/sarulabs/dingo v2.0.0+incompatible
@@ -19,7 +19,7 @@ require (
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
 	golang.org/x/text v0.3.2
-	golang.org/x/tools v0.0.0-20191209225234-22774f7dae43 // indirect
+	golang.org/x/tools v0.0.0-20191210221141-98df12377212 // indirect
 	google.golang.org/genproto v0.0.0-20191206224255-0243a4be9c8f // indirect
 	google.golang.org/grpc v1.25.1
 	gopkg.in/yaml.v2 v2.2.7 // indirect

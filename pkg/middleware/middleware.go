@@ -6,6 +6,7 @@ import (
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"google.golang.org/grpc"
 	"log"
+	"time"
 )
 
 type Middlware struct {
@@ -16,10 +17,13 @@ type Middlware struct {
 
 func (m *Middlware) Start() {
 	if m.isMiddlewareNotAvailable() {
+		log.Printf("Middlewares not available")
 		for message := range m.InputChannel {
 			m.OutputChannel <- message
 		}
 	}
+
+	log.Printf("Middlewares available")
 
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
@@ -30,17 +34,25 @@ func (m *Middlware) Start() {
 		log.Fatalf("fail to dial: %v", err)
 	}
 
+	log.Print("Middlewares connected")
+
 	defer conn.Close()
 	client := transformer.NewMiddlewareClient(conn)
 
 	for message := range m.InputChannel {
+		log.Printf("Sending message to middleware: %v", message)
+		start := time.Now()
+
 		data, err := client.Transform(context.Background(), &transformer.Data{
 			Body: message.Body,
 		})
-
 		if err != nil {
 			log.Fatalf("What happens!? %v", err)
 		}
+
+		elapsed := time.Since(start)
+		log.Printf("Binomial took %s", elapsed)
+
 		message.Body = data.GetBody()
 
 		m.OutputChannel <- message

@@ -259,10 +259,19 @@ var Container = []dingo.Def{
 	{
 		Name: "Middleware",
 		Build: func(InputMiddlewareChannel chan messages.Message, OutputMiddlewareChannel chan messages.Message) (*middleware.Middlware, error) {
+			// @TODO this needs to be extracted to its own method
+			getEnv := func(envVarName string, defaultValue string) string {
+				value := os.Getenv(envVarName)
+				if value != "" {
+					return value
+				}
+				return defaultValue
+			}
+
 			return &middleware.Middlware{
 				InputChannel:      InputMiddlewareChannel,
 				OutputChannel:     OutputMiddlewareChannel,
-				MiddlewareAddress: "passthrough:///unix:///tmp/hp",
+				MiddlewareAddress: getEnv("MIDDLEWARES_SOCKET", ""),
 			}, nil
 		},
 		Params: dingo.Params{

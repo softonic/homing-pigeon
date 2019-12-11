@@ -25,7 +25,7 @@ func (m *MiddlewareServer) Transform(ctx context.Context, req *pb.Data) (*pb.Dat
 	resp := req
 	if m.client != nil {
 		var err error
-		resp, err = (*m.client).Transform(context.Background(), req)
+		resp, err = (*m.client).Handle(context.Background(), req)
 		if err != nil {
 			log.Fatalf("What happens!? %v", err)
 		}

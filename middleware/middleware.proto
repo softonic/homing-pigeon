@@ -10,7 +10,7 @@ package middleware;
 service Middleware {
 
     // Transform the given data and return it.
-    rpc transform(Data) returns (Data) {}
+    rpc handle(Data) returns (Data) {}
 
 }
 

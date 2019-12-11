@@ -1,3 +1,5 @@
+generate-proto:
+	protoc -I middleware/ middleware/middleware.proto --go_out=plugins=grpc:middleware
 dep:
 	go get -u github.com/rakyll/gotest
 	go get -u github.com/sarulabs/dingo/dingo
@@ -6,11 +8,11 @@ dep:
 	go get -u github.com/golang/protobuf/protoc-gen-go
 	go get -u google.golang.org/grpc
 	go mod download
-build: dep
+build: dep generate-proto
 	dingo -src="./pkg/services" -dest="./pkg/generatedServices"
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/pass-middleware pkg/middlewares/main.go
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/homing-pigeon pkg/main.go
-stress-build: dep
+stress-build: dep generate-proto
 	dingo -src="./pkg/services" -dest="./pkg/generatedServices"
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/stress-pigeon pkg/stress/main.go
 docker-build:

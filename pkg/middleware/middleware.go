@@ -43,7 +43,7 @@ func (m *Middlware) Start() {
 		log.Printf("Sending message to middleware: %v", message)
 		start := time.Now()
 
-		data, err := client.Transform(context.Background(), &transformer.Data{
+		data, err := client.Handle(context.Background(), &transformer.Data{
 			Body: message.Body,
 		})
 		if err != nil {

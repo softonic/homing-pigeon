@@ -260,9 +260,9 @@ var Container = []dingo.Def{
 		Name: "Middleware",
 		Build: func(InputMiddlewareChannel chan messages.Message, OutputMiddlewareChannel chan messages.Message) (*middleware.Middlware, error) {
 			return &middleware.Middlware{
-				InputChannel:  InputMiddlewareChannel,
-				OutputChannel: OutputMiddlewareChannel,
-				MiddlewareSocket: "unix:////tmp/hp",
+				InputChannel:      InputMiddlewareChannel,
+				OutputChannel:     OutputMiddlewareChannel,
+				MiddlewareAddress: "passthrough:///unix:///tmp/hp",
 			}, nil
 		},
 		Params: dingo.Params{

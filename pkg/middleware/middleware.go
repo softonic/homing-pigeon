@@ -6,13 +6,12 @@ import (
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"google.golang.org/grpc"
 	"log"
-	"time"
 )
 
 type Middlware struct {
-	InputChannel     <-chan messages.Message
-	OutputChannel    chan<- messages.Message
-	MiddlewareSocket string
+	InputChannel      <-chan messages.Message
+	OutputChannel     chan<- messages.Message
+	MiddlewareAddress string
 }
 
 func (m *Middlware) Start() {
@@ -26,7 +25,7 @@ func (m *Middlware) Start() {
 	opts = append(opts, grpc.WithInsecure())
 	opts = append(opts, grpc.WithBlock())
 
-	conn, err := grpc.Dial(m.MiddlewareSocket, opts...)
+	conn, err := grpc.Dial(m.MiddlewareAddress, opts...)
 	if err != nil {
 		log.Fatalf("fail to dial: %v", err)
 	}
@@ -34,11 +33,8 @@ func (m *Middlware) Start() {
 	defer conn.Close()
 	client := transformer.NewMiddlewareClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
 	for message := range m.InputChannel {
-		data, err := client.Transform(ctx, &transformer.Data{
+		data, err := client.Transform(context.Background(), &transformer.Data{
 			Body: message.Body,
 		})
 
@@ -52,5 +48,5 @@ func (m *Middlware) Start() {
 }
 
 func (m *Middlware) isMiddlewareNotAvailable() bool {
-	return m.MiddlewareSocket == ""
+	return m.MiddlewareAddress == ""
 }

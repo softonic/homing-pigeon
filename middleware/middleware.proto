@@ -9,7 +9,7 @@ package middleware;
 // Middleware interface.
 service Middleware {
 
-    // Transform the given data and return it.
+    // Handle the given data and return it.
     rpc handle(Data) returns (Data) {}
 
 }

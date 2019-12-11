@@ -16,7 +16,7 @@ type MiddlewareServer struct {
 	pb.UnimplementedMiddlewareServer
 }
 
-func (m *MiddlewareServer) Transform(ctx context.Context, req *pb.Data) (*pb.Data, error) {
+func (m *MiddlewareServer) Handle(ctx context.Context, req *pb.Data) (*pb.Data, error) {
 
 	//log.Printf("Pre-Processing %v", *req)
 	// Do things

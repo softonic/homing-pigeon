@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	transformer "github.com/softonic/homing-pigeon/middleware"
+	"github.com/softonic/homing-pigeon/middleware"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"google.golang.org/grpc"
 	"log"
@@ -37,13 +37,13 @@ func (m *Middlware) Start() {
 	log.Print("Middlewares connected")
 
 	defer conn.Close()
-	client := transformer.NewMiddlewareClient(conn)
+	client := middleware.NewMiddlewareClient(conn)
 
 	for message := range m.InputChannel {
 		log.Printf("Sending message to middleware: %v", message)
 		start := time.Now()
 
-		data, err := client.Handle(context.Background(), &transformer.Data{
+		data, err := client.Handle(context.Background(), &middleware.Data{
 			Body: message.Body,
 		})
 		if err != nil {

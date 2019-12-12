@@ -6,7 +6,9 @@ import (
 	"crypto/x509"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/sarulabs/dingo"
+	. "github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
+	"github.com/softonic/homing-pigeon/pkg/middleware"
 	"github.com/softonic/homing-pigeon/pkg/readers"
 	readAdapters "github.com/softonic/homing-pigeon/pkg/readers/adapters"
 	amqpAdapter "github.com/softonic/homing-pigeon/pkg/readers/adapters/amqp"
@@ -15,7 +17,7 @@ import (
 	"github.com/streadway/amqp"
 	"html/template"
 	"io/ioutil"
-	"log"
+	"k8s.io/klog"
 	"os"
 	"strconv"
 	"strings"
@@ -25,15 +27,15 @@ import (
 var Container = []dingo.Def{
 	{
 		Name: "Reader",
-		Build: func(msgChannel chan messages.Message, ackChannel chan messages.Ack, readAdapter readAdapters.ReadAdapter) (*readers.Reader, error) {
+		Build: func(InputMiddlewareChannel chan messages.Message, ackChannel chan messages.Ack, readAdapter readAdapters.ReadAdapter) (*readers.Reader, error) {
 			return &readers.Reader{
 				ReadAdapter: readAdapter,
-				MsgChannel:  msgChannel,
+				MsgChannel:  InputMiddlewareChannel,
 				AckChannel:  ackChannel,
 			}, nil
 		},
 		Params: dingo.Params{
-			"0": dingo.Service("MsgChannel"),
+			"0": dingo.Service("InputMiddlewareChannel"),
 			"1": dingo.Service("AckChannel"),
 			"2": dingo.Service("AmqpAdapter"),
 		},
@@ -49,7 +51,7 @@ var Container = []dingo.Def{
 		Build: func(config amqpAdapter.Config, ) (readAdapters.ReadAdapter, error) {
 			failOnError := func(err error, msg string) {
 				if err != nil {
-					log.Fatalf("%s: %s", msg, err)
+					klog.Errorf("%s: %s", msg, err)
 				}
 			}
 			var err error
@@ -60,7 +62,7 @@ var Container = []dingo.Def{
 				cfg.RootCAs = x509.NewCertPool()
 				if ca, err := ioutil.ReadFile(caPath); err == nil {
 					cfg.RootCAs.AppendCertsFromPEM(ca)
-					log.Printf("Added CA certificate %s", caPath)
+					klog.V(4).Infof("Added CA certificate %s", caPath)
 				}
 				conn, err = amqp.DialTLS(config.Url, cfg)
 			} else {
@@ -173,7 +175,7 @@ var Container = []dingo.Def{
 				nil,
 			)
 			if err != nil {
-				log.Fatalf("Failed to consume: %s", err)
+				klog.Errorf("Failed to consume: %s", err)
 			}
 
 			return &readAdapters.Amqp{
@@ -190,21 +192,12 @@ var Container = []dingo.Def{
 		Name: "AmqpConfig",
 		Build: func() (amqpAdapter.Config, error) {
 			// @TODO this needs to be extracted to its own method
-			getEnv := func(envVarName string, defaultValue string) string {
-				value := os.Getenv(envVarName)
-				if value != "" {
-					return value
-				}
-				return defaultValue
-			}
-
-			// @TODO this needs to be extracted to its own method
 			consumerId := os.Getenv("CONSUMER_ID")
 			if consumerId == "" {
 				// Work out consumer ID based on hostname: useful for k8s resources (pods controlled by deployment, statefulset)
 				hostname, err := os.Hostname()
 				if err != nil {
-					log.Fatalf("Could not set ConsumerID: %v", err)
+					klog.Errorf("Could not set ConsumerID: %v", err)
 				}
 				pos := strings.LastIndex(hostname, "-")
 				consumerId = hostname[pos+1:]
@@ -218,14 +211,14 @@ var Container = []dingo.Def{
 			}
 
 			tpl := template.New("queueName")
-			tpl, err := tpl.Parse(getEnv("RABBITMQ_QUEUE_NAME", ""))
+			tpl, err := tpl.Parse(GetEnv("RABBITMQ_QUEUE_NAME", ""))
 			if err != nil {
-				log.Fatalf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
+				klog.Errorf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
 			}
 			var buf bytes.Buffer
 			err = tpl.Execute(&buf, data)
 			if err != nil {
-				log.Fatalf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
+				klog.Errorf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
 			}
 			queueName := buf.String()
 
@@ -240,33 +233,46 @@ var Container = []dingo.Def{
 			}
 
 			return amqpAdapter.Config{
-				Url:                     getEnv("RABBITMQ_URL", ""),
-				DeadLettersExchangeName: getEnv("RABBITMQ_DLX_NAME", ""),
-				DeadLettersQueueName:    getEnv("RABBITMQ_DLX_QUEUE_NAME", ""),
-				ExchangeName:            getEnv("RABBITMQ_EXCHANGE_NAME", ""),
-				ExchangeType:            getEnv("RABBITMQ_EXCHANGE_TYPE", "fanout"),
-				OuterExchangeName:       getEnv("RABBITMQ_OUTER_EXCHANGE_NAME", ""),
-				OuterExchangeType:       getEnv("RABBITMQ_OUTER_EXCHANGE_TYPE", ""),
-				OuterExchangeBindingKey: getEnv("RABBITMQ_OUTER_EXCHANGE_BINDING_KEY", ""),
+				Url:                     GetEnv("RABBITMQ_URL", ""),
+				DeadLettersExchangeName: GetEnv("RABBITMQ_DLX_NAME", ""),
+				DeadLettersQueueName:    GetEnv("RABBITMQ_DLX_QUEUE_NAME", ""),
+				ExchangeName:            GetEnv("RABBITMQ_EXCHANGE_NAME", ""),
+				ExchangeType:            GetEnv("RABBITMQ_EXCHANGE_TYPE", "fanout"),
+				OuterExchangeName:       GetEnv("RABBITMQ_OUTER_EXCHANGE_NAME", ""),
+				OuterExchangeType:       GetEnv("RABBITMQ_OUTER_EXCHANGE_TYPE", ""),
+				OuterExchangeBindingKey: GetEnv("RABBITMQ_OUTER_EXCHANGE_BINDING_KEY", ""),
 				QueueName:               queueName,
-				QueueBindingKey:         getEnv("RABBITMQ_QUEUE_BINDING_KEY", "#"),
+				QueueBindingKey:         GetEnv("RABBITMQ_QUEUE_BINDING_KEY", "#"),
 				QosPrefetchCount:        qosPrefetchCount,
 				ConsumerName:            consumerName,
 			}, nil
 		},
 	},
 	{
+		Name: "Middleware",
+		Build: func(InputMiddlewareChannel chan messages.Message, OutputMiddlewareChannel chan messages.Message) (*middleware.MiddlwareManager, error) {
+			return &middleware.MiddlwareManager{
+				InputChannel:      InputMiddlewareChannel,
+				OutputChannel:     OutputMiddlewareChannel,
+				MiddlewareAddress: GetEnv("MIDDLEWARES_SOCKET", ""),
+			}, nil
+		},
+		Params: dingo.Params{
+			"0": dingo.Service("InputMiddlewareChannel"),
+			"1": dingo.Service("OutputMiddlewareChannel"),
+		},
+	},
+	{
 		Name: "Writer",
-		Build: func(msgChannel chan messages.Message, ackChannel chan messages.Ack, writeAdapter writeAdapters.WriteAdapter) (*writers.Writer, error) {
-
+		Build: func(OutputMiddlewareChannel chan messages.Message, ackChannel chan messages.Ack, writeAdapter writeAdapters.WriteAdapter) (*writers.Writer, error) {
 			return &writers.Writer{
-				MsgChannel:   msgChannel,
+				MsgChannel:   OutputMiddlewareChannel,
 				AckChannel:   ackChannel,
 				WriteAdapter: writeAdapter,
 			}, nil
 		},
 		Params: dingo.Params{
-			"0": dingo.Service("MsgChannel"),
+			"0": dingo.Service("OutputMiddlewareChannel"),
 			"1": dingo.Service("AckChannel"),
 			"2": dingo.Service("ElasticsearchAdapter"),
 		},
@@ -303,7 +309,18 @@ var Container = []dingo.Def{
 		},
 	},
 	{
-		Name: "MsgChannel",
+		Name: "InputMiddlewareChannel",
+		Build: func() (chan messages.Message, error) {
+			bufLen, err := strconv.Atoi(os.Getenv("MESSAGE_BUFFER_LENGTH"))
+			if err != nil {
+				bufLen = 0
+			}
+			c := make(chan messages.Message, bufLen)
+			return c, nil
+		},
+	},
+	{
+		Name: "OutputMiddlewareChannel",
 		Build: func() (chan messages.Message, error) {
 			bufLen, err := strconv.Atoi(os.Getenv("MESSAGE_BUFFER_LENGTH"))
 			if err != nil {

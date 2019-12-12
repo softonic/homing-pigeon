@@ -29,7 +29,6 @@ services:
     volumes:
       - ./sockets:/tmp
     image: softonic/hp-pass-middleware:0.1.0
-    entrypoint: ["/pass-middleware"]
     environment:
       IN_SOCKET: "/tmp/hp"
   rabbit-mq:

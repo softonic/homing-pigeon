@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// @TODO Tests missing
 type MiddlwareManager struct {
 	InputChannel      <-chan messages.Message
 	OutputChannel     chan<- messages.Message

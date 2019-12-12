@@ -31,6 +31,7 @@ services:
     image: softonic/hp-pass-middleware:0.1.0
     environment:
       IN_SOCKET: "/tmp/hp"
+    command: ["-logtostderr", "-stderrthreshold=INFO"]
   rabbit-mq:
     image: rabbitmq:3.8-management
     ports:

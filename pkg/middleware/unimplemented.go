@@ -11,12 +11,12 @@ import (
 	"path/filepath"
 )
 
-type Base struct {
+type UnimplementedMiddleware struct {
 	client *pb.MiddlewareClient
 	pb.UnimplementedMiddlewareServer
 }
 
-func (b *Base) Next(req *pb.Data) (*pb.Data, error) {
+func (b *UnimplementedMiddleware) Next(req *pb.Data) (*pb.Data, error) {
 	resp := req
 	if b.client != nil {
 		var err error
@@ -27,7 +27,7 @@ func (b *Base) Next(req *pb.Data) (*pb.Data, error) {
 	return resp, nil
 }
 
-func (b *Base) Listen(middleware pb.MiddlewareServer) {
+func (b *UnimplementedMiddleware) Listen(middleware pb.MiddlewareServer) {
 	lis, err := net.Listen("unix", b.getInputSocket())
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
@@ -48,7 +48,7 @@ func (b *Base) Listen(middleware pb.MiddlewareServer) {
 	}
 }
 
-func (b *Base) getInputSocket() string {
+func (b *UnimplementedMiddleware) getInputSocket() string {
 	socket := GetEnv("IN_SOCKET", "")
 
 	err := os.RemoveAll(socket)
@@ -63,7 +63,7 @@ func (b *Base) getInputSocket() string {
 	return socket
 }
 
-func (b *Base) getOutputGrpc() (*grpc.ClientConn, *pb.MiddlewareClient) {
+func (b *UnimplementedMiddleware) getOutputGrpc() (*grpc.ClientConn, *pb.MiddlewareClient) {
 	nextSocketAddr := GetEnv("OUT_SOCKET", "")
 	if nextSocketAddr != "" {
 		var opts []grpc.DialOption

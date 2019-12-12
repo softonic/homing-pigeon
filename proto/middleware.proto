@@ -4,7 +4,7 @@ option java_multiple_files = true;
 option java_package = "com.softonic.homingpigeon.middleware";
 option java_outer_classname = "Middleware";
 
-package middleware;
+package proto;
 
 // Middleware interface.
 service Middleware {

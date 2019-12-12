@@ -13,3 +13,4 @@
 
 # Ignore generated files
 pkg/generatedServices
+bin

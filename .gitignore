@@ -12,5 +12,4 @@
 *.out
 
 # Ignore generated files
-middleware/*.pb.go
 pkg/generatedServices

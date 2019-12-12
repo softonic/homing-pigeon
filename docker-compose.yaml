@@ -28,9 +28,6 @@ services:
   hp-middleware-pass:
     volumes:
       - ./sockets:/tmp
-    build:
-      context: .
-      dockerfile: Dockerfile.middleware
     image: softonic/hp-pass-middleware:0.1.0
     entrypoint: ["/pass-middleware"]
     environment:

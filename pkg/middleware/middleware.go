@@ -51,7 +51,7 @@ func (m *Middlware) Start() {
 		}
 
 		elapsed := time.Since(start)
-		log.Printf("Binomial took %s", elapsed)
+		log.Printf("Middlewares took %s", elapsed)
 
 		message.Body = data.GetBody()
 

@@ -9,13 +9,13 @@ import (
 	"time"
 )
 
-type Middlware struct {
+type MiddlwareManager struct {
 	InputChannel      <-chan messages.Message
 	OutputChannel     chan<- messages.Message
 	MiddlewareAddress string
 }
 
-func (m *Middlware) Start() {
+func (m *MiddlwareManager) Start() {
 	if m.isMiddlewareNotAvailable() {
 		log.Printf("Middlewares not available")
 		for message := range m.InputChannel {
@@ -59,6 +59,6 @@ func (m *Middlware) Start() {
 	}
 }
 
-func (m *Middlware) isMiddlewareNotAvailable() bool {
+func (m *MiddlwareManager) isMiddlewareNotAvailable() bool {
 	return m.MiddlewareAddress == ""
 }

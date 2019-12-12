@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	. "github.com/softonic/homing-pigeon/pkg/helpers"
 )
 
 var Container = []dingo.Def{
@@ -191,15 +192,6 @@ var Container = []dingo.Def{
 		Name: "AmqpConfig",
 		Build: func() (amqpAdapter.Config, error) {
 			// @TODO this needs to be extracted to its own method
-			getEnv := func(envVarName string, defaultValue string) string {
-				value := os.Getenv(envVarName)
-				if value != "" {
-					return value
-				}
-				return defaultValue
-			}
-
-			// @TODO this needs to be extracted to its own method
 			consumerId := os.Getenv("CONSUMER_ID")
 			if consumerId == "" {
 				// Work out consumer ID based on hostname: useful for k8s resources (pods controlled by deployment, statefulset)
@@ -219,7 +211,7 @@ var Container = []dingo.Def{
 			}
 
 			tpl := template.New("queueName")
-			tpl, err := tpl.Parse(getEnv("RABBITMQ_QUEUE_NAME", ""))
+			tpl, err := tpl.Parse(GetEnv("RABBITMQ_QUEUE_NAME", ""))
 			if err != nil {
 				log.Fatalf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
 			}
@@ -241,16 +233,16 @@ var Container = []dingo.Def{
 			}
 
 			return amqpAdapter.Config{
-				Url:                     getEnv("RABBITMQ_URL", ""),
-				DeadLettersExchangeName: getEnv("RABBITMQ_DLX_NAME", ""),
-				DeadLettersQueueName:    getEnv("RABBITMQ_DLX_QUEUE_NAME", ""),
-				ExchangeName:            getEnv("RABBITMQ_EXCHANGE_NAME", ""),
-				ExchangeType:            getEnv("RABBITMQ_EXCHANGE_TYPE", "fanout"),
-				OuterExchangeName:       getEnv("RABBITMQ_OUTER_EXCHANGE_NAME", ""),
-				OuterExchangeType:       getEnv("RABBITMQ_OUTER_EXCHANGE_TYPE", ""),
-				OuterExchangeBindingKey: getEnv("RABBITMQ_OUTER_EXCHANGE_BINDING_KEY", ""),
+				Url:                     GetEnv("RABBITMQ_URL", ""),
+				DeadLettersExchangeName: GetEnv("RABBITMQ_DLX_NAME", ""),
+				DeadLettersQueueName:    GetEnv("RABBITMQ_DLX_QUEUE_NAME", ""),
+				ExchangeName:            GetEnv("RABBITMQ_EXCHANGE_NAME", ""),
+				ExchangeType:            GetEnv("RABBITMQ_EXCHANGE_TYPE", "fanout"),
+				OuterExchangeName:       GetEnv("RABBITMQ_OUTER_EXCHANGE_NAME", ""),
+				OuterExchangeType:       GetEnv("RABBITMQ_OUTER_EXCHANGE_TYPE", ""),
+				OuterExchangeBindingKey: GetEnv("RABBITMQ_OUTER_EXCHANGE_BINDING_KEY", ""),
 				QueueName:               queueName,
-				QueueBindingKey:         getEnv("RABBITMQ_QUEUE_BINDING_KEY", "#"),
+				QueueBindingKey:         GetEnv("RABBITMQ_QUEUE_BINDING_KEY", "#"),
 				QosPrefetchCount:        qosPrefetchCount,
 				ConsumerName:            consumerName,
 			}, nil
@@ -258,20 +250,11 @@ var Container = []dingo.Def{
 	},
 	{
 		Name: "Middleware",
-		Build: func(InputMiddlewareChannel chan messages.Message, OutputMiddlewareChannel chan messages.Message) (*middleware.Middlware, error) {
-			// @TODO this needs to be extracted to its own method
-			getEnv := func(envVarName string, defaultValue string) string {
-				value := os.Getenv(envVarName)
-				if value != "" {
-					return value
-				}
-				return defaultValue
-			}
-
-			return &middleware.Middlware{
+		Build: func(InputMiddlewareChannel chan messages.Message, OutputMiddlewareChannel chan messages.Message) (*middleware.MiddlwareManager, error) {
+			return &middleware.MiddlwareManager{
 				InputChannel:      InputMiddlewareChannel,
 				OutputChannel:     OutputMiddlewareChannel,
-				MiddlewareAddress: getEnv("MIDDLEWARES_SOCKET", ""),
+				MiddlewareAddress: GetEnv("MIDDLEWARES_SOCKET", ""),
 			}, nil
 		},
 		Params: dingo.Params{

@@ -26,6 +26,6 @@ func (m *PassthroughMiddleware) Handle(ctx context.Context, req *pb.Data) (*pb.D
 }
 
 func main() {
-	middleware := PassthroughMiddleware{}
-	middleware.Listen()
+	middleware := &PassthroughMiddleware{}
+	middleware.Listen(middleware)
 }

@@ -27,19 +27,19 @@ func (b *Base) Next(req *pb.Data) (*pb.Data, error) {
 	return resp, nil
 }
 
-func (b *Base) Listen() {
+func (b *Base) Listen(middleware pb.MiddlewareServer) {
 	lis, err := net.Listen("unix", b.getInputSocket())
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
-	
+
 	conn, client := b.getOutputGrpc()
 	defer conn.Close()
 
 	b.client = client
 
 	grpcServer := grpc.NewServer(grpc.MaxConcurrentStreams(10))
-	pb.RegisterMiddlewareServer(grpcServer, b)
+	pb.RegisterMiddlewareServer(grpcServer, middleware)
 
 	log.Print("Start listening")
 	err = grpcServer.Serve(lis)

@@ -40,7 +40,7 @@ func (m *MiddlwareManager) Start() {
 	client := middleware.NewMiddlewareClient(conn)
 
 	for message := range m.InputChannel {
-		log.Printf("Sending message to middleware: %v", message)
+		log.Printf("Sending message to middleware",)
 		start := time.Now()
 
 		data, err := client.Handle(context.Background(), &middleware.Data{

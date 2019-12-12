@@ -34,10 +34,10 @@ func main() {
 
 	q, err := ch.QueueDeclare(
 		cfg.QueueName, // name
-		false,   // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
+		false,         // durable
+		false,         // delete when unused
+		false,         // exclusive
+		false,         // no-wait
 		amqp.Table{"x-dead-letter-exchange": "dead-letters"},
 	)
 	failOnError(err, "Failed to declare queue")
@@ -60,6 +60,6 @@ func main() {
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
+		klog.Errorf("%s: %s", msg, err)
 	}
 }

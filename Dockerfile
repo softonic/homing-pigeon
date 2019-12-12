@@ -11,4 +11,4 @@ FROM scratch
 
 COPY --from=build /go/src/github.com/softonic/homing-pigeon/bin/homing-pigeon /
 
-ENTRYPOINT ["/homing-pigeon"]
+ENTRYPOINT ["/homing-pigeon", "-logtostderr"]

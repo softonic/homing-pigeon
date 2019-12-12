@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/sarulabs/dingo"
+	. "github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/middleware"
 	"github.com/softonic/homing-pigeon/pkg/readers"
@@ -16,12 +17,11 @@ import (
 	"github.com/streadway/amqp"
 	"html/template"
 	"io/ioutil"
-	"log"
+	"k8s.io/klog"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-	. "github.com/softonic/homing-pigeon/pkg/helpers"
 )
 
 var Container = []dingo.Def{
@@ -51,7 +51,7 @@ var Container = []dingo.Def{
 		Build: func(config amqpAdapter.Config, ) (readAdapters.ReadAdapter, error) {
 			failOnError := func(err error, msg string) {
 				if err != nil {
-					log.Fatalf("%s: %s", msg, err)
+					klog.Errorf("%s: %s", msg, err)
 				}
 			}
 			var err error
@@ -62,7 +62,7 @@ var Container = []dingo.Def{
 				cfg.RootCAs = x509.NewCertPool()
 				if ca, err := ioutil.ReadFile(caPath); err == nil {
 					cfg.RootCAs.AppendCertsFromPEM(ca)
-					log.Printf("Added CA certificate %s", caPath)
+					klog.V(4).Infof("Added CA certificate %s", caPath)
 				}
 				conn, err = amqp.DialTLS(config.Url, cfg)
 			} else {
@@ -175,7 +175,7 @@ var Container = []dingo.Def{
 				nil,
 			)
 			if err != nil {
-				log.Fatalf("Failed to consume: %s", err)
+				klog.Errorf("Failed to consume: %s", err)
 			}
 
 			return &readAdapters.Amqp{
@@ -197,7 +197,7 @@ var Container = []dingo.Def{
 				// Work out consumer ID based on hostname: useful for k8s resources (pods controlled by deployment, statefulset)
 				hostname, err := os.Hostname()
 				if err != nil {
-					log.Fatalf("Could not set ConsumerID: %v", err)
+					klog.Errorf("Could not set ConsumerID: %v", err)
 				}
 				pos := strings.LastIndex(hostname, "-")
 				consumerId = hostname[pos+1:]
@@ -213,12 +213,12 @@ var Container = []dingo.Def{
 			tpl := template.New("queueName")
 			tpl, err := tpl.Parse(GetEnv("RABBITMQ_QUEUE_NAME", ""))
 			if err != nil {
-				log.Fatalf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
+				klog.Errorf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
 			}
 			var buf bytes.Buffer
 			err = tpl.Execute(&buf, data)
 			if err != nil {
-				log.Fatalf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
+				klog.Errorf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
 			}
 			queueName := buf.String()
 

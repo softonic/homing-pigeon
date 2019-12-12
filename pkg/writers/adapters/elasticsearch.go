@@ -7,11 +7,11 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	esAdapter "github.com/softonic/homing-pigeon/pkg/writers/adapters/elasticsearch"
-	"log"
+	"k8s.io/klog"
 	"time"
 )
 
-type Elasticsearch struct{
+type Elasticsearch struct {
 	FlushMaxSize  int
 	FlushInterval time.Duration
 	Bulk          esapi.Bulk
@@ -29,10 +29,10 @@ func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack
 	for i, msg := range msgs {
 		body, err := es.decodeBody(msg.Body)
 		if err != nil {
-			log.Printf("Invalid Message: %s", string(msg.Body))
+			klog.Errorf("Invalid Message: %s", string(msg.Body))
 			nack, err := msg.Nack()
 			if err != nil {
-				log.Fatal(err)
+				klog.Error(err)
 			}
 			acks[i] = nack
 			continue
@@ -48,7 +48,7 @@ func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack
 	}
 	result, err := es.Bulk(bytes.NewReader(buf.Bytes()))
 	if err != nil || result.IsError() {
-		log.Printf("Error in bulk action, %v", err)
+		klog.Warningf("Error in bulk action, %v", err)
 		es.setAllNacks(msgs, acks)
 		return acks
 	}
@@ -73,7 +73,7 @@ func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBul
 			values := data.(map[string]interface{})
 			status := int(values["status"].(float64))
 
-			log.Printf("Item has invalid status: %v", data)
+			klog.V(2).Infof("Item has invalid status: %v", data)
 
 			if status > maxValidStatus {
 				ack, err := msgs[ackPos].Nack()
@@ -96,7 +96,7 @@ func (es *Elasticsearch) getResponseFromResult(result *esapi.Response) esAdapter
 	d := json.NewDecoder(result.Body)
 	err := d.Decode(&response)
 	if err != nil {
-		log.Fatalf("Error in elasticsearch response: %v %v", err, response)
+		klog.Errorf("Error in elasticsearch response: %v %v", err, response)
 	}
 	return response
 }

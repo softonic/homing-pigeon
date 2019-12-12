@@ -4,7 +4,7 @@ import (
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	amqpAdapter "github.com/softonic/homing-pigeon/pkg/readers/adapters/amqp"
 	"github.com/streadway/amqp"
-	"log"
+	"k8s.io/klog"
 )
 
 type Amqp struct {
@@ -19,7 +19,7 @@ func (a *Amqp) Listen(msgChannel chan<- messages.Message) {
 	defer a.Ch.Close()
 
 	go a.processMessages(msgChannel)
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	klog.V(0).Infof(" [*] Waiting for messages. To exit press CTRL+C")
 	select {}
 }
 
@@ -38,14 +38,14 @@ func (a *Amqp) HandleAck(ackChannel <-chan messages.Ack) {
 		if ack.Ack {
 			err := a.Ch.Ack(ack.Id.(uint64), false)
 			if err != nil {
-				log.Fatal(err)
+				klog.Error(err)
 			}
 			continue
 		}
 
 		err := a.Ch.Nack(ack.Id.(uint64), false, false)
 		if err != nil {
-			log.Fatal(err)
+			klog.Error(err)
 		}
 	}
 }

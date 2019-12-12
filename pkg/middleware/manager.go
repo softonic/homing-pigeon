@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"context"
-	"github.com/softonic/homing-pigeon/proto"
 	"github.com/softonic/homing-pigeon/pkg/messages"
+	"github.com/softonic/homing-pigeon/proto"
 	"google.golang.org/grpc"
-	"log"
+	"k8s.io/klog"
 	"time"
 )
 
@@ -17,13 +17,13 @@ type MiddlwareManager struct {
 
 func (m *MiddlwareManager) Start() {
 	if m.isMiddlewareNotAvailable() {
-		log.Printf("Middlewares not available")
+		klog.V(1).Infof("Middlewares not available")
 		for message := range m.InputChannel {
 			m.OutputChannel <- message
 		}
 	}
 
-	log.Printf("Middlewares available")
+	klog.V(1).Infof("Middlewares available")
 
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
@@ -31,27 +31,27 @@ func (m *MiddlwareManager) Start() {
 
 	conn, err := grpc.Dial(m.MiddlewareAddress, opts...)
 	if err != nil {
-		log.Fatalf("fail to dial: %v", err)
+		klog.Errorf("fail to dial: %v", err)
 	}
 
-	log.Print("Middlewares connected")
+	klog.V(1).Infof("Middlewares connected")
 
 	defer conn.Close()
 	client := proto.NewMiddlewareClient(conn)
 
 	for message := range m.InputChannel {
-		log.Printf("Sending message to proto",)
+		klog.V(5).Infof("Sending message to proto", )
 		start := time.Now()
 
 		data, err := client.Handle(context.Background(), &proto.Data{
 			Body: message.Body,
 		})
 		if err != nil {
-			log.Fatalf("What happens!? %v", err)
+			klog.Errorf("What happens!? %v", err)
 		}
 
 		elapsed := time.Since(start)
-		log.Printf("Middlewares took %s", elapsed)
+		klog.V(5).Infof("Middlewares took %s", elapsed)
 
 		message.Body = data.GetBody()
 

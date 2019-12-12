@@ -5,7 +5,7 @@ import (
 	. "github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/proto"
 	"google.golang.org/grpc"
-	"log"
+	"k8s.io/klog"
 	"net"
 	"os"
 	"path/filepath"
@@ -30,7 +30,7 @@ func (b *UnimplementedMiddleware) Next(req *proto.Data) (*proto.Data, error) {
 func (b *UnimplementedMiddleware) Listen(middleware proto.MiddlewareServer) {
 	lis, err := net.Listen("unix", b.getInputSocket())
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		klog.Errorf("Failed to listen: %v", err)
 	}
 
 	conn, client := b.getOutputGrpc()
@@ -41,10 +41,10 @@ func (b *UnimplementedMiddleware) Listen(middleware proto.MiddlewareServer) {
 	grpcServer := grpc.NewServer(grpc.MaxConcurrentStreams(10))
 	proto.RegisterMiddlewareServer(grpcServer, middleware)
 
-	log.Print("Start listening")
+	klog.V(0).Info("Start listening")
 	err = grpcServer.Serve(lis)
 	if err != nil {
-		log.Fatal(err)
+		klog.Error(err)
 	}
 }
 
@@ -53,12 +53,12 @@ func (b *UnimplementedMiddleware) getInputSocket() string {
 
 	err := os.RemoveAll(socket)
 	if err != nil {
-		log.Fatalf("Failed to remove socket: %v", err)
+		klog.Errorf("Failed to remove socket: %v", err)
 	}
 
 	err = os.MkdirAll(filepath.Dir(socket), 0775)
 	if err != nil {
-		log.Fatalf("Error creating socket directory: %v", err)
+		klog.Errorf("Error creating socket directory: %v", err)
 	}
 	return socket
 }
@@ -72,10 +72,10 @@ func (b *UnimplementedMiddleware) getOutputGrpc() (*grpc.ClientConn, *proto.Midd
 
 		conn, err := grpc.Dial(nextSocketAddr, opts...)
 		if err != nil {
-			log.Fatalf("fail to dial: %v", err)
+			klog.Errorf("fail to dial: %v", err)
 		}
 
-		log.Print("Connected to the next middleware")
+		klog.V(0).Info("Connected to the next middleware")
 
 		client := proto.NewMiddlewareClient(conn)
 		return conn, &client

@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"context"
-	pb "github.com/softonic/homing-pigeon/middleware"
 	. "github.com/softonic/homing-pigeon/pkg/helpers"
+	"github.com/softonic/homing-pigeon/proto"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -12,11 +12,11 @@ import (
 )
 
 type UnimplementedMiddleware struct {
-	client *pb.MiddlewareClient
-	pb.UnimplementedMiddlewareServer
+	client *proto.MiddlewareClient
+	proto.UnimplementedMiddlewareServer
 }
 
-func (b *UnimplementedMiddleware) Next(req *pb.Data) (*pb.Data, error) {
+func (b *UnimplementedMiddleware) Next(req *proto.Data) (*proto.Data, error) {
 	resp := req
 	if b.client != nil {
 		var err error
@@ -27,7 +27,7 @@ func (b *UnimplementedMiddleware) Next(req *pb.Data) (*pb.Data, error) {
 	return resp, nil
 }
 
-func (b *UnimplementedMiddleware) Listen(middleware pb.MiddlewareServer) {
+func (b *UnimplementedMiddleware) Listen(middleware proto.MiddlewareServer) {
 	lis, err := net.Listen("unix", b.getInputSocket())
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
@@ -39,7 +39,7 @@ func (b *UnimplementedMiddleware) Listen(middleware pb.MiddlewareServer) {
 	b.client = client
 
 	grpcServer := grpc.NewServer(grpc.MaxConcurrentStreams(10))
-	pb.RegisterMiddlewareServer(grpcServer, middleware)
+	proto.RegisterMiddlewareServer(grpcServer, middleware)
 
 	log.Print("Start listening")
 	err = grpcServer.Serve(lis)
@@ -63,7 +63,7 @@ func (b *UnimplementedMiddleware) getInputSocket() string {
 	return socket
 }
 
-func (b *UnimplementedMiddleware) getOutputGrpc() (*grpc.ClientConn, *pb.MiddlewareClient) {
+func (b *UnimplementedMiddleware) getOutputGrpc() (*grpc.ClientConn, *proto.MiddlewareClient) {
 	nextSocketAddr := GetEnv("OUT_SOCKET", "")
 	if nextSocketAddr != "" {
 		var opts []grpc.DialOption
@@ -77,7 +77,7 @@ func (b *UnimplementedMiddleware) getOutputGrpc() (*grpc.ClientConn, *pb.Middlew
 
 		log.Print("Connected to the next middleware")
 
-		client := pb.NewMiddlewareClient(conn)
+		client := proto.NewMiddlewareClient(conn)
 		return conn, &client
 	}
 

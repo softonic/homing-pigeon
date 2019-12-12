@@ -1,10 +1,10 @@
 package middleware
 
 import (
-	"github.com/softonic/homing-pigeon/middleware"
+	"github.com/softonic/homing-pigeon/proto"
 )
 
 type Middleware interface {
-	middleware.MiddlewareServer
-	Next(req *middleware.Data) (*middleware.Data, error)
+	proto.MiddlewareServer
+	Next(req *proto.Data) (*proto.Data, error)
 }

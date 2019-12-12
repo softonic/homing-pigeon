@@ -32,7 +32,7 @@ func (b *Base) Listen() {
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
-
+	
 	conn, client := b.getOutputGrpc()
 	defer conn.Close()
 
@@ -40,7 +40,7 @@ func (b *Base) Listen() {
 
 	grpcServer := grpc.NewServer(grpc.MaxConcurrentStreams(10))
 	pb.RegisterMiddlewareServer(grpcServer, b)
-	
+
 	log.Print("Start listening")
 	err = grpcServer.Serve(lis)
 	if err != nil {

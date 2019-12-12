@@ -13,13 +13,14 @@ type PassthroughMiddleware struct {
 
 func (m *PassthroughMiddleware) Handle(ctx context.Context, req *pb.Data) (*pb.Data, error) {
 
+	// Do things with the INPUT data
 	log.Printf("Pre-Processing %v", *req)
-	// Do things
-	//---------------------
+
+	// Send data to the next middleware and got the response
 	resp, err := m.Next(req)
 
+	// Do things with the OUTPUT data
 	log.Printf("Post-Processing %v", *resp)
-	// Do things
 
 	return resp, err
 }

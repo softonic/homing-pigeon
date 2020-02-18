@@ -1,3 +1,5 @@
+TAG ?= dev
+
 generate-proto:
 	protoc -I proto/ proto/middleware.proto --go_out=plugins=grpc:proto
 dep:
@@ -15,7 +17,7 @@ stress-build: dep generate-proto
 	dingo -src="./pkg/services" -dest="./pkg/generatedServices"
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/stress-pigeon pkg/stress/main.go
 docker-build:
-	docker build -t softonic/homing-pigeon:dev .
+	docker build -t softonic/homing-pigeon:${TAG} .
 mock:
 	mockery -name=WriteAdapter -recursive
 	mockery -name=Channel -recursive

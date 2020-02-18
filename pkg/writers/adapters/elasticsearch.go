@@ -55,7 +55,6 @@ func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack
 
 	response := es.getResponseFromResult(result)
 	es.setAcksFromResponse(response, msgs, acks)
-
 	return acks
 }
 
@@ -73,9 +72,9 @@ func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBul
 			values := data.(map[string]interface{})
 			status := int(values["status"].(float64))
 
-			klog.V(2).Infof("Item has invalid status: %v", data)
-
 			if status > maxValidStatus {
+				klog.Warningf("Item has invalid status: %v", data)
+
 				ack, err := msgs[ackPos].Nack()
 				if err == nil {
 					acks[ackPos] = ack

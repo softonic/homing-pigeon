@@ -99,6 +99,15 @@ In order to start up correctly, it needs well defined environment variables:
 
 ###### Elasticsearch
 
+####### Input format
+
+At the moment only bulk operations are supported:
+`{"meta":{"<operation>":{...}},"data":{<document>}}`
+
+For more options see [Bulk API reference](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html)
+
+####### Configuration
+
 | Name                                 | Value                                                              |
 | ------------------------------------ | ------------------------------------------------------------------ |
 | ELASTICSEARCH_URL                    | Elasticsearch url string                                           |

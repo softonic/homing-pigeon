@@ -24,10 +24,13 @@ type BulkMock struct {
 
 func (b *BulkMock) getBulkFunc() esapi.Bulk {
 	return func(body io.Reader, o ...func(*esapi.BulkRequest)) (*esapi.Response, error) {
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(body)
-		args := b.Called(buf.String())
 		var err error
+		buf := new(bytes.Buffer)
+		_, err = buf.ReadFrom(body)
+		if err != nil {
+			panic(err)
+		}
+		args := b.Called(buf.String())
 		err = nil
 		if args.Get(1) != nil {
 			err = args.Get(0).(error)
@@ -137,7 +140,6 @@ func TestBulkActionWithSingleItemUnsuccessful(t *testing.T) {
 	assert.Len(t, acks, 1)
 	assert.False(t, acks[0].Ack)
 }
-
 
 func TestBulkActionWithMixedItemStatus(t *testing.T) {
 	bulk := new(BulkMock)

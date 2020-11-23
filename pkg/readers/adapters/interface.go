@@ -6,4 +6,3 @@ type ReadAdapter interface {
 	Listen(msgChannel chan<- messages.Message)
 	HandleAck(ackChannel <-chan messages.Ack)
 }
-

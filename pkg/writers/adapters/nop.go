@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type Nop struct {}
+type Nop struct{}
 
 func (wa *Nop) ProcessMessages(msgs []messages.Message) []messages.Ack {
 	acks := make([]messages.Ack, 0)

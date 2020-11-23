@@ -20,7 +20,7 @@ func TestProduceMessageQuantity(t *testing.T) {
 func TestAcksAreRead(t *testing.T) {
 	ackChannel := make(chan messages.Ack, 2)
 	ackChannel <- messages.Ack{
-		Id: uint64(1),
+		Id:  uint64(1),
 		Ack: true,
 	}
 

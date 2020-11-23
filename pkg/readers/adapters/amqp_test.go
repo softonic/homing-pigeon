@@ -103,7 +103,6 @@ func TestHandleNack(t *testing.T) {
 	)
 }
 
-
 func TestHandleMixedAcks(t *testing.T) {
 	expectedMessages := 1
 	ackChannel := make(chan messages.Ack, expectedMessages+1)

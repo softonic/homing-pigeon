@@ -3,8 +3,8 @@ package messages
 import "errors"
 
 type Message struct {
-	Id interface{}
-	Body []byte
+	Id    interface{}
+	Body  []byte
 	acked bool
 }
 
@@ -20,7 +20,7 @@ func (m Message) Nack() (Ack, error) {
 	}, nil
 }
 
-func (m Message) Ack() (Ack, error){
+func (m Message) Ack() (Ack, error) {
 	err := m.setAsAcked()
 	if err != nil {
 		return Ack{}, err

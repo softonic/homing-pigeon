@@ -4,6 +4,7 @@ import (
 	"github.com/sarulabs/dingo"
 	"github.com/softonic/homing-pigeon/pkg/generatedServices/dic"
 	"github.com/streadway/amqp"
+	"k8s.io/klog"
 	"log"
 )
 

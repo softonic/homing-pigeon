@@ -114,7 +114,7 @@ func (es *Elasticsearch) writeToBuffer(buf *bytes.Buffer, body esAdapter.Elastic
 	if err != nil {
 		return err
 	}
-	if bytes.Compare(meta, []byte("null")) == 0 {
+	if bytes.Equal(meta, []byte("null")) {
 		return errors.New("Invalid body: meta should be present")
 	}
 	data, err := json.Marshal(body.Data)
@@ -123,7 +123,7 @@ func (es *Elasticsearch) writeToBuffer(buf *bytes.Buffer, body esAdapter.Elastic
 	}
 
 	payload := append(meta, "\n"...)
-	if bytes.Compare(data, []byte("null")) != 0 {
+	if !bytes.Equal(data, []byte("null")) {
 		payload = append(payload, data...)
 		payload = append(payload, "\n"...)
 	}

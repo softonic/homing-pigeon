@@ -21,7 +21,7 @@ func (b *UnimplementedMiddleware) Next(req *proto.Data) (*proto.Data, error) {
 	resp := req
 	if b.client != nil {
 		var err error
-		resp, err = (*b.client).Handle(context.Background(), req)
+		_, err = (*b.client).Handle(context.Background(), req)
 		return nil, err
 	}
 

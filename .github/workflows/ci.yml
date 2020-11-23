@@ -10,7 +10,7 @@ jobs:
     env:
       GOPATH: ${{ github.workspace }}
       GO111MODULE: on
-      GOFLAGS: -mod vendor
+      GOFLAGS: "-mod vendor"
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}

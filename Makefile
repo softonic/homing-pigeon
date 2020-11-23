@@ -1,5 +1,7 @@
 TAG ?= dev
 
+install-protoc:
+	sudo apt-get install -y protobuf-compiler
 generate-proto:
 	protoc -I proto/ proto/middleware.proto --go_out=plugins=grpc:proto
 dep:

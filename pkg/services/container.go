@@ -64,12 +64,19 @@ var Container = []dingo.Def{
 					cfg.RootCAs.AppendCertsFromPEM(ca)
 					klog.V(4).Infof("Added CA certificate %s", caPath)
 				}
+                tlsClientCert := os.Getenv("RABBITMQ_TLS_CLIENT_CERT")
+                tlsClientKey := os.Getenv("RABBITMQ_TLS_CLIENT_KEY")
+
+                if tlsClientCert != "" {
+                    if cert, err := tls.LoadX509KeyPair(tlsClientCert, tlsClientKey); err == nil {
+                            cfg.Certificates = append(cfg.Certificates, cert)
+                    }
+                }
 				conn, err = amqp.DialTLS(config.Url, cfg)
 			} else {
 				conn, err = amqp.Dial(config.Url)
 
 			}
-			failOnError(err, "Failed to connect to RabbitMQ")
 			failOnError(err, "Failed to connect to RabbitMQ")
 
 			ch, err := conn.Channel()

@@ -12,7 +12,7 @@ Deliver messages from an input interface to an output interface.
 
 Homing Pigeon is an application thought to connect read and write adapters easily.
 Whatever comes from an input, it will be sent to a specific output, without the need of writing the usual boilerplate code.
-This tool is thought so that we can easily plug in any kind of adapter for both input and ouput.
+This tool is thought so that we can easily plug in any kind of adapter for both input and output.
 We can use this application to easily store messages, or to easily proxy messages.
 A few examples could be: AMQP to Elasticsearch, HTTP to MySQL, HTTP to HTTP, or any kind of combination.
 
@@ -83,6 +83,8 @@ In order to start up correctly, it needs well defined environment variables:
 | ------------------------------------ | ------------------------------------------------------------------ |
 | RABBITMQ_URL                         | RabbitMQ url string                                                |
 | RABBITMQ_CA_PATH                     | Path to CA used to sign SSL cert for RabbitMQ server               |
+| RABBITMQ_TLS_CLIENT_CERT             | Path to client certificate to connect to RabbitMQ server           |
+| RABBITMQ_TLS_CLIENT_KEY              | Path to client key to connect to RabbitMQ server                   |
 | RABBITMQ_DLX_NAME                    | RabbitMQ dead letters exchange name                                |
 | RABBITMQ_DLX_QUEUE_NAME              | RabbitMQ dead letters exchange's queue name                        |
 | RABBITMQ_EXCHANGE_NAME               | RabbitMQ messaging exchange name                                   |

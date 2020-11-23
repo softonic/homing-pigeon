@@ -36,8 +36,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go-version }}
-      - name: Install linter
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint
+
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache go modules
@@ -52,6 +51,8 @@ jobs:
       - name: Build
         run: make build
       - name: Lint
-        run: golangci-lint run
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.29
       - name: Test
         run: go test -v -race ./...

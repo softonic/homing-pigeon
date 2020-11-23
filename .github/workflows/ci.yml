@@ -26,7 +26,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Build
-        run: make build
+        run: |
+          make install-protoc
+          make build
       - name: Lint
         uses: golangci/golangci-lint-action@v2
         with:

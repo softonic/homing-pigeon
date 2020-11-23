@@ -1,14 +1,8 @@
 TAG ?= dev
-PROTOC_VERSION = 3.14.0
 
 install-protoc:
-	curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/protoc-$(PROTOC_VERSION)-linux-x86_64.zip
-	exit
-	sudo unzip -o protoc-$(PROTOC_VERSION)-linux-x86_64.zip -d /usr/local bin/protoc
-	sudo unzip -o protoc-$(PROTOC_VERSION)-linux-x86_64.zip -d /usr/local 'include/*'
-	sudo chmod +x /usr/local/bin/protoc
-	rm -f protoc-$(PROTOC_VERSION)-linux-x86_64.zip
-generate-proto: install-protoc
+	sudo apt-get install -y protobuf-compiler
+generate-proto:
 	protoc -I proto/ proto/middleware.proto --go_out=plugins=grpc:proto
 dep:
 	go get -u github.com/rakyll/gotest
@@ -19,7 +13,7 @@ dep:
 	go get -u google.golang.org/grpc
 	go mod download
 build: dep generate-proto
-	dingo
+    grep -snr "ming" . | grep -v homing | grep ming
 	dingo -src="./pkg/services" -dest="./pkg/generatedServices"
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/homing-pigeon pkg/main.go
 stress-build: dep generate-proto

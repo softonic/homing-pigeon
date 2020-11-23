@@ -1,12 +1,14 @@
-version: '3.7'
+version: '3.8'
 
 services:
   homing-pigeon:
     volumes:
     - ./sockets:/tmp
+    - ./:/go/src/github.com/softonic/homing-pigeon
     build:
       context: .
       dockerfile: Dockerfile
+    command: ["/homing-pigeon", "-logtostderr"]
     image: softonic/homing-pigeon:dev
     environment:
       ELASTICSEARCH_URL: "http://elasticsearch:9200"
@@ -38,7 +40,7 @@ services:
       - 15672:15672
       - 5672:5672
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.4.2
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.3
     ports:
       - 9200:9200
     environment:

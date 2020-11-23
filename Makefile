@@ -13,7 +13,7 @@ dep:
 	go get -u google.golang.org/grpc
 	go mod download
 build: dep generate-proto
-    grep -snr "ming" . | grep -v homing | grep ming
+	grep -snr "ming" . | grep -v homing | grep ming
 	dingo -src="./pkg/services" -dest="./pkg/generatedServices"
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/homing-pigeon pkg/main.go
 stress-build: dep generate-proto

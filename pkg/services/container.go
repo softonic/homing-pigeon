@@ -67,7 +67,7 @@ var Container = []dingo.Def{
                 tlsClientCert := os.Getenv("RABBITMQ_TLS_CLIENT_CERT")
                 tlsClientKey := os.Getenv("RABBITMQ_TLS_CLIENT_KEY")
 
-                if tlsClientCert != "" {
+                if (tlsClientCert != "" && tlsClientKey != "") {
                     if cert, err := tls.LoadX509KeyPair(tlsClientCert, tlsClientKey); err == nil {
                             cfg.Certificates = append(cfg.Certificates, cert)
                     }

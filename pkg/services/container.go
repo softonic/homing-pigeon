@@ -68,12 +68,15 @@ var Container = []dingo.Def{
 				tlsClientCert := os.Getenv("RABBITMQ_TLS_CLIENT_CERT")
 				tlsClientKey := os.Getenv("RABBITMQ_TLS_CLIENT_KEY")
 
-				if tlsClientCert != "" && tlsClientKey != "" {
+				if (tlsClientCert != "" && tlsClientKey != "") {
 					if cert, err := tls.LoadX509KeyPair(tlsClientCert, tlsClientKey); err == nil {
 						cfg.Certificates = append(cfg.Certificates, cert)
+						klog.V(4).Infof("Loaded client certificate %s", tlsClientCert)
+						klog.V(4).Infof("Loaded client key %s", tlsClientKey)
 					}
 				}
 				conn, err = amqp.DialTLS(config.Url, cfg)
+
 			} else {
 				conn, err = amqp.Dial(config.Url)
 

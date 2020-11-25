@@ -4,6 +4,7 @@ services:
   homing-pigeon:
     volumes:
     - ./sockets:/tmp
+    - ./:/go/src/github.com/softonic/homing-pigeon
     build:
       context: .
       dockerfile: Dockerfile

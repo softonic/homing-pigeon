@@ -48,7 +48,7 @@ var Container = []dingo.Def{
 	},
 	{
 		Name: "AmqpAdapter",
-		Build: func(config amqpAdapter.Config, ) (readAdapters.ReadAdapter, error) {
+		Build: func(config amqpAdapter.Config) (readAdapters.ReadAdapter, error) {
 			failOnError := func(err error, msg string) {
 				if err != nil {
 					klog.Errorf("%s: %s", msg, err)
@@ -57,19 +57,34 @@ var Container = []dingo.Def{
 			var err error
 			var conn *amqp.Connection
 			caPath := os.Getenv("RABBITMQ_CA_PATH")
+
 			if caPath != "" {
 				cfg := new(tls.Config)
 				cfg.RootCAs = x509.NewCertPool()
-				if ca, err := ioutil.ReadFile(caPath); err == nil {
+				ca, err := ioutil.ReadFile(caPath)
+				if err == nil {
 					cfg.RootCAs.AppendCertsFromPEM(ca)
-					klog.V(4).Infof("Added CA certificate %s", caPath)
+					klog.V(0).Infof("Added CA certificate %s", caPath)
+				}
+				failOnError(err, "Failed loading RabbitMQ CA")
+
+				tlsClientCert := os.Getenv("RABBITMQ_TLS_CLIENT_CERT")
+				tlsClientKey := os.Getenv("RABBITMQ_TLS_CLIENT_KEY")
+				if tlsClientCert != "" && tlsClientKey != "" {
+					cert, err := tls.LoadX509KeyPair(tlsClientCert, tlsClientKey)
+					if err == nil {
+						cfg.Certificates = append(cfg.Certificates, cert)
+						klog.V(0).Infof("Loaded RabbitMQ client cert %s", tlsClientCert)
+						klog.V(0).Infof("Loaded RabbitMQ client key %s", tlsClientKey)
+					}
+					failOnError(err, "Failed loading RabbitMQ client certificate")
 				}
 				conn, err = amqp.DialTLS(config.Url, cfg)
+				klog.V(0).Infof("TLS Connection established")
 			} else {
 				conn, err = amqp.Dial(config.Url)
-
+				klog.V(0).Infof("Non TLS Connection established")
 			}
-			failOnError(err, "Failed to connect to RabbitMQ")
 			failOnError(err, "Failed to connect to RabbitMQ")
 
 			ch, err := conn.Channel()

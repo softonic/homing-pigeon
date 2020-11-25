@@ -6,12 +6,12 @@ import (
 	"strconv"
 )
 
-type Dummy struct {}
+type Dummy struct{}
 
 func (d *Dummy) Listen(msgChannel chan<- messages.Message) {
 	for i := 0; i < 100; i++ {
 		msg := messages.Message{
-			Id: uint64(i),
+			Id:   uint64(i),
 			Body: []byte("my message " + strconv.Itoa(i)),
 		}
 		msgChannel <- msg
@@ -23,4 +23,3 @@ func (d *Dummy) HandleAck(ackChannel <-chan messages.Ack) {
 		fmt.Print("Acked " + strconv.Itoa(int(ack.Id.(uint64))) + "\n")
 	}
 }
-

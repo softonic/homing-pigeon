@@ -26,7 +26,7 @@ func (ew *Writer) appendMessage(msg messages.Message) {
 	ew.msgs = append(ew.msgs, msg)
 	ew.mutex.Unlock()
 }
-func (ew *Writer) shouldProcess() (bool) {
+func (ew *Writer) shouldProcess() bool {
 	ew.mutex.Lock()
 	res := ew.WriteAdapter.ShouldProcess(ew.msgs)
 	ew.mutex.Unlock()

@@ -41,7 +41,7 @@ func (m *MiddlwareManager) Start() {
 	client := proto.NewMiddlewareClient(conn)
 
 	for message := range m.InputChannel {
-		klog.V(5).Infof("Sending message to proto", )
+		klog.V(5).Infof("Sending message to proto")
 		start := time.Now()
 
 		data, err := client.Handle(context.Background(), &proto.Data{

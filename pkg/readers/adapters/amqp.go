@@ -5,8 +5,6 @@ import (
 	amqpAdapter "github.com/softonic/homing-pigeon/pkg/readers/adapters/amqp"
 	"github.com/streadway/amqp"
 	"k8s.io/klog"
-	"log"
-	"os"
 )
 
 type Amqp struct {
@@ -31,10 +29,9 @@ func (a *Amqp) processMessages(writeChannel chan<- messages.Message) {
 		select {
 		case err := <-a.Notify:
 			if err != nil {
-				log.Fatalf("Error in connection: %s", err)
+				klog.Fatalf("Error in connection: %s", err)
 			}
-			log.Println("Closed connection.")
-			os.Exit(0)
+			klog.V(4).Infoln("Closed connection.")
 			break
 		case d := <-a.ConsumedMessages:
 			msg := messages.Message{}

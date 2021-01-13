@@ -86,6 +86,7 @@ var Container = []dingo.Def{
 				klog.V(0).Infof("Non TLS Connection established")
 			}
 			failOnError(err, "Failed to connect to RabbitMQ")
+			notify := conn.NotifyClose(make(chan *amqp.Error))
 
 			ch, err := conn.Channel()
 			failOnError(err, "Failed to open channel")
@@ -197,6 +198,7 @@ var Container = []dingo.Def{
 				ConsumedMessages: msgs,
 				Conn:             conn,
 				Ch:               ch,
+				Notify:           notify,
 			}, nil
 		},
 		Params: dingo.Params{

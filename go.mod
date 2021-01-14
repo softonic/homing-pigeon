@@ -9,19 +9,19 @@ require (
 	github.com/golangci/golangci-lint v1.33.0 // indirect
 	github.com/rakyll/gotest v0.0.5 // indirect
 	github.com/rogpeppe/go-internal v1.6.2 // indirect
-	github.com/sarulabs/dingo v2.0.0+incompatible
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/objx v0.3.0 // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/vektra/mockery v1.1.2 // indirect
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
-	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
-	golang.org/x/text v0.3.4 // indirect
-	golang.org/x/tools v0.0.0-20201121010211-780cb80bd7fb // indirect
-	google.golang.org/genproto v0.0.0-20201119123407-9b1e624d6bc4 // indirect
-	google.golang.org/grpc v1.33.2
+	golang.org/x/mod v0.4.0 // indirect
+	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
+	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
+	golang.org/x/text v0.3.5 // indirect
+	golang.org/x/tools v0.0.0-20210114065538-d78b04bdf963 // indirect
+	google.golang.org/genproto v0.0.0-20210113195801-ae06605f4595 // indirect
+	google.golang.org/grpc v1.35.0
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/klog v1.0.0
 )
 

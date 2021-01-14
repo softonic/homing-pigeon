@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/proto"
 	"google.golang.org/grpc"
@@ -62,4 +63,12 @@ func (m *MiddlwareManager) Start() {
 
 func (m *MiddlwareManager) isMiddlewareNotAvailable() bool {
 	return m.MiddlewareAddress == ""
+}
+
+func NewMiddlewareManager(inputChannel chan messages.Message, outputChannel chan messages.Message) *MiddlwareManager {
+	return &MiddlwareManager{
+		InputChannel:      inputChannel,
+		OutputChannel:     outputChannel,
+		MiddlewareAddress: helpers.GetEnv("MIDDLEWARES_SOCKET", ""),
+	}
 }

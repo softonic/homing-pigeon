@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	esAdapter "github.com/softonic/homing-pigeon/pkg/writers/adapters/elasticsearch"
 	"k8s.io/klog"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -146,4 +149,26 @@ func (es *Elasticsearch) decodeBody(msg []byte) (esAdapter.ElasticsearchBody, er
 	err := json.Unmarshal(msg, &body)
 
 	return body, err
+}
+
+func NewElasticsearchAdapter() (WriteAdapter, error) {
+	flushMaxSize, err := strconv.Atoi(os.Getenv("ELASTICSEARCH_FLUSH_MAX_SIZE"))
+	if err != nil {
+		flushMaxSize = 1
+	}
+
+	flushMaxIntervalMs, err := strconv.Atoi(os.Getenv("ELASTICSEARCH_FLUSH_MAX_INTERVAL_MS"))
+	if err != nil {
+		flushMaxIntervalMs = 1000
+	}
+
+	es, err := elasticsearch.NewClient(elasticsearch.Config{})
+	if err != nil {
+		return nil, err
+	}
+	return &Elasticsearch{
+		FlushMaxSize:  flushMaxSize,
+		FlushInterval: time.Duration(flushMaxIntervalMs) * time.Millisecond,
+		Bulk:          es.Bulk,
+	}, nil
 }

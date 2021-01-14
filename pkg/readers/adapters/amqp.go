@@ -82,7 +82,8 @@ func NewAmqpReaderAdapter(config amqpAdapter.Config) (ReadAdapter, error) {
 	if caPath != "" {
 		cfg := new(tls.Config)
 		cfg.RootCAs = x509.NewCertPool()
-		ca, err := ioutil.ReadFile(caPath)
+		var ca []byte
+		ca, err = ioutil.ReadFile(caPath)
 		if err == nil {
 			cfg.RootCAs.AppendCertsFromPEM(ca)
 			klog.V(0).Infof("Added CA certificate %s", caPath)
@@ -101,10 +102,15 @@ func NewAmqpReaderAdapter(config amqpAdapter.Config) (ReadAdapter, error) {
 			failOnError(err, "Failed loading RabbitMQ client certificate")
 		}
 		conn, err = amqp.DialTLS(config.Url, cfg)
-		klog.V(0).Infof("TLS Connection established")
+		failOnError(err, "Failed to connect to RabbitMQ")
+		if err == nil {
+			klog.V(0).Infof("TLS Connection established")
+		}
 	} else {
 		conn, err = amqp.Dial(config.Url)
-		klog.V(0).Infof("Non TLS Connection established")
+		if err == nil {
+			klog.V(0).Infof("Non TLS Connection established")
+		}
 	}
 	failOnError(err, "Failed to connect to RabbitMQ")
 	notify := conn.NotifyClose(make(chan *amqp.Error))

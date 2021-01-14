@@ -9,6 +9,7 @@ require (
 	github.com/golangci/golangci-lint v1.33.0 // indirect
 	github.com/rakyll/gotest v0.0.5 // indirect
 	github.com/rogpeppe/go-internal v1.6.2 // indirect
+	github.com/sarulabs/dingo v2.0.0+incompatible
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/objx v0.3.0 // indirect
 	github.com/stretchr/testify v1.7.0

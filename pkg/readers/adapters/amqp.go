@@ -11,6 +11,7 @@ type Amqp struct {
 	ConsumedMessages <-chan amqp.Delivery
 	Conn             amqpAdapter.Connection
 	Ch               amqpAdapter.Channel
+	Notify           chan *amqp.Error
 }
 
 // @TODO detected race condition with closed channel
@@ -24,12 +25,21 @@ func (a *Amqp) Listen(msgChannel chan<- messages.Message) {
 }
 
 func (a *Amqp) processMessages(writeChannel chan<- messages.Message) {
-	msg := messages.Message{}
-	for d := range a.ConsumedMessages {
-		msg.Id = d.DeliveryTag
-		msg.Body = d.Body
+	for {
+		select {
+		case err := <-a.Notify:
+			if err != nil {
+				klog.Fatalf("Error in connection: %s", err)
+			}
+			klog.V(4).Infoln("Closed connection.")
+			break
+		case d := <-a.ConsumedMessages:
+			msg := messages.Message{}
+			msg.Id = d.DeliveryTag
+			msg.Body = d.Body
 
-		writeChannel <- msg
+			writeChannel <- msg
+		}
 	}
 }
 

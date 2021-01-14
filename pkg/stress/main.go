@@ -1,19 +1,17 @@
 package main
 
 import (
-	"github.com/sarulabs/dingo"
-	"github.com/softonic/homing-pigeon/pkg/generatedServices/dic"
+	"github.com/softonic/homing-pigeon/pkg/readers/adapters"
 	"github.com/streadway/amqp"
 	"k8s.io/klog"
 	"log"
 )
 
 func main() {
-	container, err := dic.NewContainer(dingo.App)
+	cfg, err := adapters.NewAmqpConfig()
 	if err != nil {
 		panic(err)
 	}
-	cfg := container.GetAmqpConfig()
 	conn, err := amqp.Dial(cfg.Url)
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()

@@ -7,6 +7,7 @@ require (
 	github.com/gobuffalo/packr v1.30.1 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/golangci/golangci-lint v1.33.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/rakyll/gotest v0.0.5 // indirect
 	github.com/rogpeppe/go-internal v1.6.2 // indirect
 	github.com/sarulabs/dingo v2.0.0+incompatible

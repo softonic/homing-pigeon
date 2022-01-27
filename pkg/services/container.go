@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/elastic/go-elasticsearch/v7"
+	elasticsearch "github.com/elastic/go-elasticsearch/v7"
 	"github.com/sarulabs/dingo"
-	. "github.com/softonic/homing-pigeon/pkg/helpers"
+	"github.com/softonic/homing-pigeon/pkg/ack"
+	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/middleware"
 	"github.com/softonic/homing-pigeon/pkg/readers"
@@ -228,7 +229,7 @@ var Container = []dingo.Def{
 			}
 
 			tpl := template.New("queueName")
-			tpl, err := tpl.Parse(GetEnv("RABBITMQ_QUEUE_NAME", ""))
+			tpl, err := tpl.Parse(helpers.GetEnv("RABBITMQ_QUEUE_NAME", ""))
 			if err != nil {
 				klog.Errorf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
 			}
@@ -250,16 +251,16 @@ var Container = []dingo.Def{
 			}
 
 			return amqpAdapter.Config{
-				Url:                     GetEnv("RABBITMQ_URL", ""),
-				DeadLettersExchangeName: GetEnv("RABBITMQ_DLX_NAME", ""),
-				DeadLettersQueueName:    GetEnv("RABBITMQ_DLX_QUEUE_NAME", ""),
-				ExchangeName:            GetEnv("RABBITMQ_EXCHANGE_NAME", ""),
-				ExchangeType:            GetEnv("RABBITMQ_EXCHANGE_TYPE", "fanout"),
-				OuterExchangeName:       GetEnv("RABBITMQ_OUTER_EXCHANGE_NAME", ""),
-				OuterExchangeType:       GetEnv("RABBITMQ_OUTER_EXCHANGE_TYPE", ""),
-				OuterExchangeBindingKey: GetEnv("RABBITMQ_OUTER_EXCHANGE_BINDING_KEY", ""),
+				Url:                     helpers.GetEnv("RABBITMQ_URL", ""),
+				DeadLettersExchangeName: helpers.GetEnv("RABBITMQ_DLX_NAME", ""),
+				DeadLettersQueueName:    helpers.GetEnv("RABBITMQ_DLX_QUEUE_NAME", ""),
+				ExchangeName:            helpers.GetEnv("RABBITMQ_EXCHANGE_NAME", ""),
+				ExchangeType:            helpers.GetEnv("RABBITMQ_EXCHANGE_TYPE", "fanout"),
+				OuterExchangeName:       helpers.GetEnv("RABBITMQ_OUTER_EXCHANGE_NAME", ""),
+				OuterExchangeType:       helpers.GetEnv("RABBITMQ_OUTER_EXCHANGE_TYPE", ""),
+				OuterExchangeBindingKey: helpers.GetEnv("RABBITMQ_OUTER_EXCHANGE_BINDING_KEY", ""),
 				QueueName:               queueName,
-				QueueBindingKey:         GetEnv("RABBITMQ_QUEUE_BINDING_KEY", "#"),
+				QueueBindingKey:         helpers.GetEnv("RABBITMQ_QUEUE_BINDING_KEY", "#"),
 				QosPrefetchCount:        qosPrefetchCount,
 				ConsumerName:            consumerName,
 			}, nil
@@ -271,12 +272,28 @@ var Container = []dingo.Def{
 			return &middleware.MiddlwareManager{
 				InputChannel:      InputMiddlewareChannel,
 				OutputChannel:     OutputMiddlewareChannel,
-				MiddlewareAddress: GetEnv("MIDDLEWARES_SOCKET", ""),
+				MiddlewareAddress: helpers.GetEnv("MIDDLEWARES_SOCKET", ""),
 			}, nil
 		},
 		Params: dingo.Params{
 			"0": dingo.Service("InputMiddlewareChannel"),
 			"1": dingo.Service("OutputMiddlewareChannel"),
+		},
+	},
+	{
+		Name: "AckManager",
+		Build: func(inputChannel chan messages.Ack, outputChannel chan messages.Ack, serviceChannel chan messages.Ack) (*ack.Manager, error) {
+			return &ack.Manager{
+				InputChannel:   inputChannel,
+				OutputChannel:  outputChannel,
+				ServiceChannel: serviceChannel,
+				ServiceAddress: helpers.GetEnv("ACK_SERVICE_ADDRESS", ""),
+			}, nil
+		},
+		Params: dingo.Params{
+			"0": dingo.Service("AckManagerChannel"),
+			"1": dingo.Service("AckChannel"),
+			"2": dingo.Service("AckServiceChannel"),
 		},
 	},
 	{
@@ -290,7 +307,7 @@ var Container = []dingo.Def{
 		},
 		Params: dingo.Params{
 			"0": dingo.Service("OutputMiddlewareChannel"),
-			"1": dingo.Service("AckChannel"),
+			"1": dingo.Service("AckManagerChannel"),
 			"2": dingo.Service("ElasticsearchAdapter"),
 		},
 	},
@@ -349,6 +366,28 @@ var Container = []dingo.Def{
 	},
 	{
 		Name: "AckChannel",
+		Build: func() (chan messages.Ack, error) {
+			bufLen, err := strconv.Atoi(os.Getenv("ACK_BUFFER_LENGTH"))
+			if err != nil {
+				bufLen = 0
+			}
+			c := make(chan messages.Ack, bufLen)
+			return c, nil
+		},
+	},
+	{
+		Name: "AckManagerChannel",
+		Build: func() (chan messages.Ack, error) {
+			bufLen, err := strconv.Atoi(os.Getenv("ACK_BUFFER_LENGTH"))
+			if err != nil {
+				bufLen = 0
+			}
+			c := make(chan messages.Ack, bufLen)
+			return c, nil
+		},
+	},
+	{
+		Name: "AckServiceChannel",
 		Build: func() (chan messages.Ack, error) {
 			bufLen, err := strconv.Atoi(os.Getenv("ACK_BUFFER_LENGTH"))
 			if err != nil {

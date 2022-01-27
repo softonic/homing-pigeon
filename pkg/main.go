@@ -15,9 +15,11 @@ func main() {
 	}
 	reader := container.GetReader()
 	middleware := container.GetMiddleware()
+	ackManager := container.GetAckManager()
 	writer := container.GetWriter()
 
 	go reader.Start()
 	go middleware.Start()
+	go ackManager.Start()
 	writer.Start()
 }

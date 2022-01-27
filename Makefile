@@ -2,12 +2,13 @@ TAG ?= dev
 
 generate-proto:
 	protoc -I proto/ proto/middleware.proto --go_out=plugins=grpc:proto
+	protoc -I proto/ proto/ack.proto --go_out=plugins=grpc:proto
 dep:
 	go get -u github.com/rakyll/gotest
 	go get -u github.com/sarulabs/dingo/dingo
 	go get -u github.com/vektra/mockery/.../
 	go get -u github.com/golang/protobuf/proto
-	go get -u github.com/golang/protobuf/protoc-gen-go
+	go get -u github.com/golang/protobuf/protoc-gen-go@v1.3.2
 	go get -u google.golang.org/grpc
 	go mod download
 build: dep generate-proto

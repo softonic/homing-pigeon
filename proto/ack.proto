@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.softonic.homingpigeon.ack";
+option java_outer_classname = "AckService";
+
+package proto;
+
+// Ack Service interface.
+service AckService {
+
+    // Handle the given data and return it.
+    rpc GetMessages(EmptyRequest) returns (stream Message) {}
+
+}
+
+message EmptyRequest {}
+
+// Message is represented with the body that contains the actual data and a boolean flag.
+message Message {
+    bytes Body = 1;
+    bool  Ack  = 2;
+}
+

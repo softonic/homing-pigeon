@@ -14,18 +14,17 @@ type Server struct {
 	mu           sync.RWMutex
 }
 
-func (s *Server) addClient(uid string, client proto.AckService_GetMessagesServer) {
+func (s *Server) AddClient(uid string, client proto.AckService_GetMessagesServer) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.clients[uid] = client
 	klog.V(1).Info("New client connected")
 }
 
-func (s *Server) getClients() []proto.AckService_GetMessagesServer {
-	var clients []proto.AckService_GetMessagesServer
-
+func (s *Server) GetClientsCopy() []proto.AckService_GetMessagesServer {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	var clients []proto.AckService_GetMessagesServer
 	for _, client := range s.clients {
 		clients = append(clients, client)
 	}
@@ -35,11 +34,11 @@ func (s *Server) getClients() []proto.AckService_GetMessagesServer {
 func (s *Server) GetMessages(req *proto.EmptyRequest, client proto.AckService_GetMessagesServer) error {
 	uid := uuid.Must(uuid.NewRandom()).String()
 
-	s.addClient(uid, client)
+	s.AddClient(uid, client)
 
 	for message := range s.InputChannel {
 		klog.V(1).Info("Sending ACK to clients")
-		for _, client := range s.getClients() {
+		for _, client := range s.GetClientsCopy() {
 			client.Send(&proto.Message{
 				Body: message.Body,
 				Ack:  message.Ack,

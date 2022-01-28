@@ -39,7 +39,7 @@ func (t *Manager) StartServer() {
 
 func (t *Manager) Start() {
 
-	if t.shouldStartAckService() {
+	if t.ShouldStartAckService() {
 		go t.StartServer()
 	}
 
@@ -49,7 +49,7 @@ func (t *Manager) Start() {
 	}
 }
 
-func (t *Manager) shouldStartAckService() bool {
+func (t *Manager) ShouldStartAckService() bool {
 	if t.ServiceAddress == "" {
 		klog.V(1).Info("ACK-Manager not available")
 		return false

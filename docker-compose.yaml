@@ -26,7 +26,7 @@ services:
       GRPC_GO_LOG_VERBOSITY_LEVEL: 99
       GRPC_GO_LOG_SEVERITY_LEVEL: info
       MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hp"
-      #ACK_SERVICE_ADDRESS: ":8090"
+      #ACK_BROKER_ADDRESS: ":8090"
   hp-middleware-pass:
     volumes:
       - ./sockets:/tmp

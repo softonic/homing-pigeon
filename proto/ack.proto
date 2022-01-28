@@ -2,12 +2,12 @@ syntax = "proto3";
 
 option java_multiple_files = true;
 option java_package = "com.softonic.homingpigeon.ack";
-option java_outer_classname = "AckService";
+option java_outer_classname = "AckBroker";
 
 package proto;
 
 // Ack Service interface.
-service AckService {
+service AckBroker {
 
     // Handle the given data and return it.
     rpc GetMessages(EmptyRequest) returns (stream Message) {}

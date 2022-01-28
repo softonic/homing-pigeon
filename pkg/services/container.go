@@ -282,18 +282,18 @@ var Container = []dingo.Def{
 	},
 	{
 		Name: "AckManager",
-		Build: func(inputChannel chan messages.Ack, outputChannel chan messages.Ack, serviceChannel chan messages.Ack) (*ack.Manager, error) {
+		Build: func(inputChannel chan messages.Ack, outputChannel chan messages.Ack, brokerChannel chan messages.Ack) (*ack.Manager, error) {
 			return &ack.Manager{
-				InputChannel:   inputChannel,
-				OutputChannel:  outputChannel,
-				ServiceChannel: serviceChannel,
-				ServiceAddress: helpers.GetEnv("ACK_SERVICE_ADDRESS", ""),
+				InputChannel:  inputChannel,
+				OutputChannel: outputChannel,
+				BrokerChannel: brokerChannel,
+				BrokerAddress: helpers.GetEnv("ACK_BROKER_ADDRESS", ""),
 			}, nil
 		},
 		Params: dingo.Params{
 			"0": dingo.Service("AckManagerChannel"),
 			"1": dingo.Service("AckChannel"),
-			"2": dingo.Service("AckServiceChannel"),
+			"2": dingo.Service("AckBrokerChannel"),
 		},
 	},
 	{
@@ -387,7 +387,7 @@ var Container = []dingo.Def{
 		},
 	},
 	{
-		Name: "AckServiceChannel",
+		Name: "AckBrokerChannel",
 		Build: func() (chan messages.Ack, error) {
 			bufLen, err := strconv.Atoi(os.Getenv("ACK_BUFFER_LENGTH"))
 			if err != nil {

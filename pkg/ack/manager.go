@@ -11,22 +11,22 @@ import (
 
 // @TODO Tests missing
 type Manager struct {
-	InputChannel   <-chan messages.Ack
-	OutputChannel  chan<- messages.Ack
-	ServiceChannel chan messages.Ack
-	ServiceAddress string
+	InputChannel  <-chan messages.Ack
+	OutputChannel chan<- messages.Ack
+	BrokerChannel chan messages.Ack
+	BrokerAddress string
 }
 
 func (t *Manager) StartServer() {
-	lis, err := net.Listen("tcp", t.ServiceAddress)
+	lis, err := net.Listen("tcp", t.BrokerAddress)
 	if err != nil {
 		klog.Errorf("Failed to listen: %v", err)
 	}
 
 	grpcServer := grpc.NewServer(grpc.MaxConcurrentStreams(10))
-	proto.RegisterAckServiceServer(grpcServer, &Server{
-		clients:      make(map[string]proto.AckService_GetMessagesServer),
-		InputChannel: t.ServiceChannel,
+	proto.RegisterAckBrokerServer(grpcServer, &Server{
+		clients:      make(map[string]proto.AckBroker_GetMessagesServer),
+		InputChannel: t.BrokerChannel,
 		mu:           sync.RWMutex{},
 	})
 
@@ -39,18 +39,18 @@ func (t *Manager) StartServer() {
 
 func (t *Manager) Start() {
 
-	if t.ShouldStartAckService() {
+	if t.ShouldStartAckBroker() {
 		go t.StartServer()
 	}
 
 	for message := range t.InputChannel {
 		t.OutputChannel <- message
-		t.ServiceChannel <- message
+		t.BrokerChannel <- message
 	}
 }
 
-func (t *Manager) ShouldStartAckService() bool {
-	if t.ServiceAddress == "" {
+func (t *Manager) ShouldStartAckBroker() bool {
+	if t.BrokerAddress == "" {
 		klog.V(1).Info("ACK-Manager not available")
 		return false
 	}

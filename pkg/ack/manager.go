@@ -24,8 +24,8 @@ func (t *Manager) StartServer() {
 	}
 
 	grpcServer := grpc.NewServer(grpc.MaxConcurrentStreams(10))
-	proto.RegisterAckBrokerServer(grpcServer, &Server{
-		clients:      make(map[string]proto.AckBroker_GetMessagesServer),
+	proto.RegisterAckEventServer(grpcServer, &Server{
+		clients:      make(map[string]proto.AckEvent_GetMessagesServer),
 		InputChannel: t.BrokerChannel,
 		mu:           sync.RWMutex{},
 	})

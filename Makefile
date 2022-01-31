@@ -5,17 +5,14 @@ generate-proto:
 	protoc -I proto/ proto/ack_event.proto --go_out=plugins=grpc:proto
 dep:
 	go get -u github.com/rakyll/gotest
-	go get -u github.com/sarulabs/dingo/dingo
 	go get -u github.com/vektra/mockery/.../
 	go get -u github.com/golang/protobuf/proto
 	go get -u github.com/golang/protobuf/protoc-gen-go@v1.3.2
 	go get -u google.golang.org/grpc
 	go mod download
 build: dep generate-proto
-	dingo -src="./pkg/services" -dest="./pkg/generatedServices"
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/homing-pigeon pkg/main.go
 stress-build: dep generate-proto
-	dingo -src="./pkg/services" -dest="./pkg/generatedServices"
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/stress-pigeon pkg/stress/main.go
 docker-build:
 	docker build -t softonic/homing-pigeon:${TAG} .

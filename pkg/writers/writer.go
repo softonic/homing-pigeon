@@ -64,3 +64,15 @@ func (ew *Writer) sendAcks(acks []messages.Ack, ackChannel chan<- messages.Ack) 
 		ackChannel <- ack
 	}
 }
+
+func NewElasticsearchWriter(outputChannel chan messages.Message, ackChannel chan messages.Ack) (*Writer, error) {
+	adapter, err := adapters.NewElasticsearchAdapter()
+	if err != nil {
+		return nil, err
+	}
+	return &Writer{
+		MsgChannel:   outputChannel,
+		AckChannel:   ackChannel,
+		WriteAdapter: adapter,
+	}, nil
+}

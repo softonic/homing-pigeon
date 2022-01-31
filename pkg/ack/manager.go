@@ -1,6 +1,7 @@
 package ack
 
 import (
+	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/proto"
 	"google.golang.org/grpc"
@@ -55,4 +56,13 @@ func (t *Manager) ShouldStartAckBroker() bool {
 		return false
 	}
 	return true
+}
+
+func NewAckManager(inputChannel chan messages.Ack, outputChannel chan messages.Ack, brokerChannel chan messages.Ack) *Manager {
+	return &Manager{
+		InputChannel:  inputChannel,
+		OutputChannel: outputChannel,
+		BrokerChannel: brokerChannel,
+		BrokerAddress: helpers.GetEnv("ACK_BROKER_ADDRESS", ""),
+	}
 }

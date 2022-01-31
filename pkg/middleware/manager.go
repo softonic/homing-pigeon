@@ -6,6 +6,7 @@ import (
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/klog"
 	"time"
 )
@@ -28,7 +29,7 @@ func (m *MiddlwareManager) Start() {
 	klog.V(1).Infof("Middlewares available")
 
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithInsecure())
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	opts = append(opts, grpc.WithBlock())
 
 	conn, err := grpc.Dial(m.MiddlewareAddress, opts...)

@@ -32,7 +32,7 @@ Reader interface reads messages from a single queue and acks or (optionally) nac
 ##### Elasticsearch with bulk API
 
 Failed messages will be nacked, and successful messages will be acked.
-It supports a well defined JSON format, which of course reminds of elasticsearch Bulk API:
+It supports a well-defined JSON format, which of course reminds of elasticsearch Bulk API:
 
 ```json
 {

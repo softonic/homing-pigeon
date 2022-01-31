@@ -34,6 +34,22 @@ services:
     environment:
       IN_SOCKET: "/tmp/hp"
     command: ["-stderrthreshold=INFO"]
+  hp-ack:
+    build:
+      context: .
+      dockerfile: hp-ack.Dockerfile
+    image: softonic/hp-ack:dev
+    environment:
+      SOCKET: "homing-pigeon:8090"
+    command: ["-stderrthreshold=INFO"]
+  hp-ack-2:
+    build:
+      context: .
+      dockerfile: hp-ack.Dockerfile
+    image: softonic/hp-ack:dev
+    environment:
+      SOCKET: "homing-pigeon:8090"
+    command: [ "-stderrthreshold=INFO" ]
   rabbit-mq:
     image: rabbitmq:3.8-management
     ports:

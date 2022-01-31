@@ -39,10 +39,14 @@ func (s *Server) GetMessages(req *proto.EmptyRequest, client proto.AckEvent_GetM
 	for message := range s.InputChannel {
 		klog.V(1).Info("Sending ACK to clients")
 		for _, client := range s.GetClientsCopy() {
-			client.Send(&proto.Message{
+			err := client.Send(&proto.Message{
 				Body: message.Body,
 				Ack:  message.Ack,
 			})
+
+			if err != nil {
+				klog.Errorf("Error sending to grpc client: %v", err)
+			}
 		}
 	}
 	return nil

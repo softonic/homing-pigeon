@@ -15,11 +15,11 @@ type Manager struct {
 	InputChannel  <-chan messages.Ack
 	OutputChannel chan<- messages.Ack
 	BrokerChannel chan messages.Ack
-	BrokerAddress string
+	BrokerPort    string
 }
 
 func (t *Manager) StartServer() {
-	lis, err := net.Listen("tcp", t.BrokerAddress)
+	lis, err := net.Listen("tcp", t.BrokerPort)
 	if err != nil {
 		klog.Errorf("Failed to listen: %v", err)
 	}
@@ -51,7 +51,7 @@ func (t *Manager) Start() {
 }
 
 func (t *Manager) ShouldStartAckBroker() bool {
-	if t.BrokerAddress == "" {
+	if t.BrokerPort == "" {
 		klog.V(1).Info("ACK-Manager not available")
 		return false
 	}
@@ -63,6 +63,6 @@ func NewAckManager(inputChannel chan messages.Ack, outputChannel chan messages.A
 		InputChannel:  inputChannel,
 		OutputChannel: outputChannel,
 		BrokerChannel: brokerChannel,
-		BrokerAddress: helpers.GetEnv("ACK_BROKER_ADDRESS", ""),
+		BrokerPort:    helpers.GetEnv("ACK_BROKER_PORT", ""),
 	}
 }

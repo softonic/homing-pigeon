@@ -19,23 +19,28 @@ func main() {
 		bufLen = 0
 	}
 	inputChannel := make(chan messages.Message, bufLen)
-	ackChannel := make(chan messages.Ack, bufLen)
 	outputChannel := make(chan messages.Message, bufLen)
-	ackManagerChannel := make(chan messages.Ack, bufLen)
-	brokerAckChannel := make(chan messages.Ack, bufLen)
 
-	reader, err := readers.NewAMQPReader(inputChannel, ackChannel)
+	bufLen, err = strconv.Atoi(os.Getenv("ACK_BUFFER_LENGTH"))
+	if err != nil {
+		bufLen = 0
+	}
+	ackChannel := make(chan messages.Ack, bufLen)
+	brokerAckChannel := make(chan messages.Ack, bufLen)
+	ackManagerChannel := make(chan messages.Ack, bufLen)
+
+	reader, err := readers.NewReader(inputChannel, ackChannel)
+	if err != nil {
+		panic(err)
+	}
+
+	writer, err := writers.NewWriter(outputChannel, ackManagerChannel)
 	if err != nil {
 		panic(err)
 	}
 
 	middlewareManager := middleware.NewMiddlewareManager(inputChannel, outputChannel)
 	ackManager := ack.NewAckManager(ackManagerChannel, ackChannel, brokerAckChannel)
-
-	writer, err := writers.NewElasticsearchWriter(outputChannel, ackManagerChannel)
-	if err != nil {
-		panic(err)
-	}
 
 	go reader.Start()
 	go middlewareManager.Start()

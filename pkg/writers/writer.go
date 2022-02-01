@@ -1,6 +1,7 @@
 package writers
 
 import (
+	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/writers/adapters"
 	"sync"
@@ -65,14 +66,22 @@ func (ew *Writer) sendAcks(acks []messages.Ack, ackChannel chan<- messages.Ack) 
 	}
 }
 
-func NewElasticsearchWriter(outputChannel chan messages.Message, ackChannel chan messages.Ack) (*Writer, error) {
-	adapter, err := adapters.NewElasticsearchAdapter()
-	if err != nil {
-		return nil, err
+func NewWriter(outputChannel chan messages.Message, ackChannel chan messages.Ack) (*Writer, error) {
+
+	var err error
+	var writeAdapter adapters.WriteAdapter
+	adapter := helpers.GetEnv("WRITE_ADAPTER", "")
+
+	switch adapter {
+	case "dummy":
+		writeAdapter, err = &adapters.Dummy{}, nil
+	default:
+		writeAdapter, err = adapters.NewElasticsearchAdapter()
 	}
+
 	return &Writer{
 		MsgChannel:   outputChannel,
 		AckChannel:   ackChannel,
-		WriteAdapter: adapter,
-	}, nil
+		WriteAdapter: writeAdapter,
+	}, err
 }

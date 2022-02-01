@@ -1,6 +1,7 @@
 package readers
 
 import (
+	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/readers/adapters"
 )
@@ -16,19 +17,31 @@ func (r *Reader) Start() {
 	r.ReadAdapter.Listen(r.MsgChannel)
 }
 
-func NewAMQPReader(inputChannel chan messages.Message, ackChannel chan messages.Ack) (*Reader, error) {
+func NewReader(inputChannel chan messages.Message, ackChannel chan messages.Ack) (*Reader, error) {
+
+	var err error
+	var readAdapter adapters.ReadAdapter
+	adapter := helpers.GetEnv("READ_ADAPTER", "")
+
+	switch adapter {
+	case "dummy":
+		readAdapter, err = &adapters.Dummy{}, nil
+	default:
+		readAdapter, err = NewAMQPAdapter()
+	}
+
+	return &Reader{
+		ReadAdapter: readAdapter,
+		MsgChannel:  inputChannel,
+		AckChannel:  ackChannel,
+	}, err
+}
+
+func NewAMQPAdapter() (adapters.ReadAdapter, error) {
 
 	amqpConfig, err := adapters.NewAmqpConfig()
 	if err != nil {
 		return nil, err
 	}
-	adapter, err := adapters.NewAmqpReaderAdapter(amqpConfig)
-	if err != nil {
-		return nil, err
-	}
-	return &Reader{
-		ReadAdapter: adapter,
-		MsgChannel:  inputChannel,
-		AckChannel:  ackChannel,
-	}, nil
+	return adapters.NewAmqpReaderAdapter(amqpConfig)
 }

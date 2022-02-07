@@ -8,21 +8,28 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/klog"
+	"net"
+	"os"
+	"strconv"
+	"sync"
 	"time"
 )
 
 // @TODO Tests missing
 type MiddlwareManager struct {
-	InputChannel      <-chan messages.Message
-	OutputChannel     chan<- messages.Message
-	MiddlewareAddress string
+	MsgIncomingChannel <-chan messages.Message
+	MsgOutgoingChannel chan<- messages.Message
+	AckIncomingChannel <-chan messages.Ack
+	AckOutgoingChannel chan<- messages.Ack
+	MiddlewareAddress  string
+	BrokerPort         string
 }
 
-func (m *MiddlwareManager) Start() {
+func (m *MiddlwareManager) HandleInput() {
 	if m.isMiddlewareNotAvailable() {
 		klog.V(1).Infof("Middlewares not available")
-		for message := range m.InputChannel {
-			m.OutputChannel <- message
+		for message := range m.MsgIncomingChannel {
+			m.MsgOutgoingChannel <- message
 		}
 	}
 
@@ -42,7 +49,7 @@ func (m *MiddlwareManager) Start() {
 	defer conn.Close()
 	client := proto.NewMiddlewareClient(conn)
 
-	for message := range m.InputChannel {
+	for message := range m.MsgIncomingChannel {
 		klog.V(5).Infof("Sending message to proto")
 		start := time.Now()
 
@@ -58,7 +65,43 @@ func (m *MiddlwareManager) Start() {
 
 		message.Body = data.GetBody()
 
-		m.OutputChannel <- message
+		m.MsgOutgoingChannel <- message
+	}
+}
+
+func (m *MiddlwareManager) HandleOutput() {
+	if m.isBrokerNotAvailable() {
+		for message := range m.AckIncomingChannel {
+			m.AckOutgoingChannel <- message
+		}
+	}
+
+	brokerChannel := getBrokerChannel()
+
+	// Start Broker server
+	go func() {
+		lis, err := net.Listen("tcp", m.BrokerPort)
+		if err != nil {
+			klog.Errorf("Failed to listen: %v", err)
+		}
+
+		grpcServer := grpc.NewServer(grpc.MaxConcurrentStreams(10))
+		proto.RegisterBrokerServer(grpcServer, &Broker{
+			clients:      make(map[string]proto.Broker_GetMessageServer),
+			InputChannel: brokerChannel,
+			mu:           sync.RWMutex{},
+		})
+
+		klog.V(1).Info("Response Broker listening...")
+		err = grpcServer.Serve(lis)
+		if err != nil {
+			klog.Error(err)
+		}
+	}()
+
+	for message := range m.AckIncomingChannel {
+		m.AckOutgoingChannel <- message
+		brokerChannel <- message
 	}
 }
 
@@ -66,10 +109,26 @@ func (m *MiddlwareManager) isMiddlewareNotAvailable() bool {
 	return m.MiddlewareAddress == ""
 }
 
-func NewMiddlewareManager(inputChannel chan messages.Message, outputChannel chan messages.Message) *MiddlwareManager {
+func (m *MiddlwareManager) isBrokerNotAvailable() bool {
+	return m.BrokerPort == ""
+}
+
+func getBrokerChannel() chan messages.Ack {
+	bufLen, err := strconv.Atoi(os.Getenv("ACK_BUFFER_LENGTH"))
+	if err != nil {
+		bufLen = 0
+	}
+
+	return make(chan messages.Ack, bufLen)
+}
+
+func NewMiddlewareManager(msgCh1 chan messages.Message, msgCh2 chan messages.Message, ackCh1 chan messages.Ack, ackCh2 chan messages.Ack) *MiddlwareManager {
 	return &MiddlwareManager{
-		InputChannel:      inputChannel,
-		OutputChannel:     outputChannel,
-		MiddlewareAddress: helpers.GetEnv("MIDDLEWARES_SOCKET", ""),
+		MsgIncomingChannel: msgCh1,
+		MsgOutgoingChannel: msgCh2,
+		AckIncomingChannel: ackCh1,
+		AckOutgoingChannel: ackCh2,
+		MiddlewareAddress:  helpers.GetEnv("MIDDLEWARES_SOCKET", ""),
+		BrokerPort:         helpers.GetEnv("RESPONSE_BROKER_PORT", ""),
 	}
 }

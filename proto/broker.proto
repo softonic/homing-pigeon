@@ -1,16 +1,16 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "com.softonic.homingpigeon.ack_event";
-option java_outer_classname = "AckEvent";
+option java_package = "com.softonic.homingpigeon.broker";
+option java_outer_classname = "Broker";
 
 package proto;
 
 // Ack Service interface.
-service AckEvent {
+service Broker {
 
     // Handle the given data and return it.
-    rpc GetMessages(EmptyRequest) returns (stream Message) {}
+    rpc GetMessage(EmptyRequest) returns (stream Message) {}
 
 }
 
@@ -19,5 +19,5 @@ message EmptyRequest {}
 // Message is represented with the body that contains the actual data and a boolean flag.
 message Message {
     bytes Body = 1;
-    bool  Ack  = 2;
+    bool  Success = 2;
 }

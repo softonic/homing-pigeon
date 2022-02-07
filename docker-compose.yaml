@@ -28,7 +28,7 @@ services:
       MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hp"
       READ_ADAPTER: "amqp"
       WRITE_ADAPTER: "elasticsearch"
-      ACK_BROKER_PORT: ":8090"
+      RESPONSE_BROKER_PORT: ":8090"
   hp-middleware-pass:
     volumes:
       - ./sockets:/tmp

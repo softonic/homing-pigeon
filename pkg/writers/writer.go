@@ -4,6 +4,7 @@ import (
 	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/writers/adapters"
+	"k8s.io/klog"
 	"sync"
 	"time"
 )
@@ -70,13 +71,14 @@ func NewWriter(outputChannel chan messages.Message, ackChannel chan messages.Ack
 
 	var err error
 	var writeAdapter adapters.WriteAdapter
-	adapter := helpers.GetEnv("WRITE_ADAPTER", "")
+	adapter := helpers.GetEnv("WRITE_ADAPTER", "ELASTIC")
 
 	switch adapter {
-	case "dummy":
-		writeAdapter, err = &adapters.Dummy{}, nil
-	default:
+	case "ELASTIC":
 		writeAdapter, err = adapters.NewElasticsearchAdapter()
+	default:
+		klog.Warning("Writer not defined, using dummy implementation")
+		writeAdapter, err = &adapters.Dummy{}, nil
 	}
 
 	return &Writer{

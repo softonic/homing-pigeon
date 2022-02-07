@@ -4,6 +4,7 @@ import (
 	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/readers/adapters"
+	"k8s.io/klog"
 )
 
 type Reader struct {
@@ -21,13 +22,14 @@ func NewReader(inputChannel chan messages.Message, ackChannel chan messages.Ack)
 
 	var err error
 	var readAdapter adapters.ReadAdapter
-	adapter := helpers.GetEnv("READ_ADAPTER", "")
+	adapter := helpers.GetEnv("READ_ADAPTER", "AMQP")
 
 	switch adapter {
-	case "dummy":
-		readAdapter, err = &adapters.Dummy{}, nil
-	default:
+	case "AMQP":
 		readAdapter, err = NewAMQPAdapter()
+	default:
+		klog.Warning("Reader not defined, using dummy implementation")
+		readAdapter, err = &adapters.Dummy{}, nil
 	}
 
 	return &Reader{

@@ -26,8 +26,8 @@ services:
       GRPC_GO_LOG_VERBOSITY_LEVEL: 99
       GRPC_GO_LOG_SEVERITY_LEVEL: info
       MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hp"
-      READ_ADAPTER: "amqp"
-      WRITE_ADAPTER: "elasticsearch"
+      READ_ADAPTER: "AMQP"
+      WRITE_ADAPTER: "ELASTIC"
       RESPONSE_BROKER_PORT: ":8090"
   hp-middleware-pass:
     volumes:

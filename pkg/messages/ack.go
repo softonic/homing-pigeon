@@ -1,6 +1,7 @@
 package messages
 
 type Ack struct {
-	Id  interface{}
-	Ack bool
+	Id   interface{}
+	Body []byte
+	Ack  bool
 }

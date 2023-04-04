@@ -69,11 +69,14 @@ In order to start up correctly, it needs well defined environment variables:
 
 ##### Core
 
-| Name                                 | Value                                                                      |
-| ------------------------------------ | -------------------------------------------------------------------------- |
-| MESSAGE_BUFFER_LENGTH                | Buffer length for internal golang channel used for messaging               |
-| ACK_BUFFER_LENGTH                    | Buffer length for internal golang channel used for acks                    |
-| MIDDLEWARES_SOCKET                   | Socket to connect to middlewares. Ex: passthrough:///unix://tmp/test.sock" |
+| Name                  | Value                                                                      |
+|-----------------------|----------------------------------------------------------------------------|
+| MESSAGE_BUFFER_LENGTH | Buffer length for internal golang channel used for messaging               |
+| ACK_BUFFER_LENGTH     | Buffer length for internal golang channel used for acks                    |
+| MIDDLEWARES_SOCKET    | Socket to connect to middlewares. Ex: passthrough:///unix://tmp/test.sock" |
+| READ_ADAPTER          | Read interface implementation. Default: AMQP                               |
+| WRITE_ADAPTER         | Write interface implementation. Default: ELASTIC                           |
+| RESPONSE_BROKER_PORT  | TCP port where broker will emit each response Ex: ":12345"                 |
 
 ##### Read Adapters
 

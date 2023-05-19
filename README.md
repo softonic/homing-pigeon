@@ -8,7 +8,7 @@ Deliver messages from an input interface to an output interface.
 
 ### Overview
 
-![](images/diagram.png)
+![](images/diagram.jpg)
 
 Homing Pigeon is an application thought to connect read and write adapters easily.
 Whatever comes from an input, it will be sent to a specific output, without the need of writing the usual boilerplate code.

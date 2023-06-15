@@ -11,9 +11,8 @@ func (d *Dummy) ProcessMessages(msgs []messages.Message) []messages.Ack {
 	var processedMsg []messages.Ack
 	for i := 0; i < len(msgs); i++ {
 		processedMsg = append(processedMsg, messages.Ack{
-			Id:   uint64(i),
-			Body: msgs[i].Body,
-			Ack:  true,
+			Id:  uint64(i),
+			Ack: true,
 		})
 	}
 	return processedMsg

@@ -76,7 +76,6 @@ In order to start up correctly, it needs well defined environment variables:
 | MIDDLEWARES_SOCKET    | Socket to connect to middlewares. Ex: passthrough:///unix://tmp/test.sock" |
 | READ_ADAPTER          | Read interface implementation. Default: AMQP                               |
 | WRITE_ADAPTER         | Write interface implementation. Default: ELASTIC                           |
-| RESPONSE_BROKER_PORT  | TCP port where broker will emit each response Ex: ":12345"                 |
 
 ##### Read Adapters
 

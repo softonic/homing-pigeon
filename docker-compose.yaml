@@ -28,13 +28,12 @@ services:
       MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hp"
       READ_ADAPTER: "AMQP"
       WRITE_ADAPTER: "ELASTIC"
-      RESPONSE_BROKER_PORT: ":8090"
   hp-middleware-pass:
     volumes:
       - ./sockets:/tmp
     image: softonic/hp-pass-middleware:0.1.0
     environment:
-      IN_SOCKET: "/tmp/hp"
+      IN_SOCKET: "unix:///tmp/hp"
     command: ["-stderrthreshold=INFO"]
   rabbit-mq:
     image: rabbitmq:3.8-management
@@ -51,6 +50,7 @@ services:
       - bootstrap.memory_lock=true
       - discovery.seed_hosts=elasticsearch
       - cluster.initial_master_nodes=elasticsearch
+      - vm.max_map_count=262144
     ulimits:
       memlock:
         soft: -1

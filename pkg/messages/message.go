@@ -15,9 +15,8 @@ func (m Message) Nack() (Ack, error) {
 	}
 
 	return Ack{
-		Id:   m.Id,
-		Body: m.Body,
-		Ack:  false,
+		Id:  m.Id,
+		Ack: false,
 	}, nil
 }
 
@@ -28,9 +27,8 @@ func (m Message) Ack() (Ack, error) {
 	}
 
 	return Ack{
-		Id:   m.Id,
-		Body: m.Body,
-		Ack:  true,
+		Id:  m.Id,
+		Ack: true,
 	}, nil
 }
 

@@ -31,11 +31,10 @@ func main() {
 		panic(err)
 	}
 
-	incomingMiddleware := middleware.NewMiddlewareManager(msgCh1, msgCh2, ackCh1, ackCh2)
+	middleware := middleware.NewMiddlewareManager(msgCh1, msgCh2)
 
 	go reader.Start()
-	go incomingMiddleware.HandleInput()
-	go incomingMiddleware.HandleOutput()
+	go middleware.Start()
 	writer.Start()
 }
 

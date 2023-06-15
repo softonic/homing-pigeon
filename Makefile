@@ -2,7 +2,6 @@ TAG ?= dev
 
 generate-proto:
 	protoc -I proto/ proto/middleware.proto --go_out=plugins=grpc:proto
-	protoc -I proto/ proto/broker.proto --go_out=plugins=grpc:proto
 dep:
 	go get -u github.com/rakyll/gotest
 	go get -u github.com/vektra/mockery/.../

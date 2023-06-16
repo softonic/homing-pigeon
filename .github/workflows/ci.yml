@@ -33,5 +33,7 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.29
+          skip-pkg-cache: true
+          skip-build-cache: true
       - name: Test
         run: go test -v -race ./...

@@ -10,10 +10,6 @@ jobs:
     env:
       GO111MODULE: on
     steps:
-      - name: Lint
-        uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.29
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Install Go
@@ -33,5 +29,10 @@ jobs:
         run: |
           sudo apt-get install -y protobuf-compiler
           make build
+      - name: Lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.29
+          skip-cache: true
       - name: Test
         run: go test -v -race ./...

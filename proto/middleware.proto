@@ -18,4 +18,3 @@ service Middleware {
 message Data {
     bytes Body = 1;
 }
-

@@ -9,7 +9,6 @@ import (
 	amqpAdapter "github.com/softonic/homing-pigeon/pkg/readers/adapters/amqp"
 	"github.com/streadway/amqp"
 	"html/template"
-	"io/ioutil"
 	"k8s.io/klog"
 	"os"
 	"strconv"
@@ -83,7 +82,7 @@ func NewAmqpReaderAdapter(config amqpAdapter.Config) (ReadAdapter, error) {
 		cfg := new(tls.Config)
 		cfg.RootCAs = x509.NewCertPool()
 		var ca []byte
-		ca, err = ioutil.ReadFile(caPath)
+		ca, err = os.ReadFile(caPath)
 		if err == nil {
 			cfg.RootCAs.AppendCertsFromPEM(ca)
 			klog.V(0).Infof("Added CA certificate %s", caPath)

@@ -50,7 +50,7 @@ services:
       - bootstrap.memory_lock=true
       - discovery.seed_hosts=elasticsearch
       - cluster.initial_master_nodes=elasticsearch
-      - vm.max_map_count=262144
+      # - bootstrap.system_call_filter=false
     ulimits:
       memlock:
         soft: -1

@@ -6,7 +6,7 @@ dep:
 	go get -u github.com/rakyll/gotest
 	go get -u github.com/vektra/mockery/.../
 	go get -u github.com/golang/protobuf/proto
-	go get -u github.com/golang/protobuf/protoc-gen-go@v1.3.2
+	go install github.com/golang/protobuf/protoc-gen-go@v1.3.2
 	go get -u google.golang.org/grpc
 	go mod download
 build: dep generate-proto

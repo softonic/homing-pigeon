@@ -1,8 +1,10 @@
 package writers
 
 import (
+	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/writers/adapters"
+	"k8s.io/klog"
 	"sync"
 	"time"
 )
@@ -63,4 +65,25 @@ func (ew *Writer) sendAcks(acks []messages.Ack, ackChannel chan<- messages.Ack) 
 	for _, ack := range acks {
 		ackChannel <- ack
 	}
+}
+
+func NewWriter(outputChannel chan messages.Message, ackChannel chan messages.Ack) (*Writer, error) {
+
+	var err error
+	var writeAdapter adapters.WriteAdapter
+	adapter := helpers.GetEnv("WRITE_ADAPTER", "ELASTIC")
+
+	switch adapter {
+	case "ELASTIC":
+		writeAdapter, err = adapters.NewElasticsearchAdapter()
+	default:
+		klog.Warning("Writer not defined, using dummy implementation")
+		writeAdapter, err = &adapters.Dummy{}, nil
+	}
+
+	return &Writer{
+		MsgChannel:   outputChannel,
+		AckChannel:   ackChannel,
+		WriteAdapter: writeAdapter,
+	}, err
 }

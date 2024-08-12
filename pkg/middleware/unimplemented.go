@@ -5,6 +5,7 @@ import (
 	. "github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/klog"
 	"net"
 	"os"
@@ -68,7 +69,7 @@ func (b *UnimplementedMiddleware) getOutputGrpc() (*grpc.ClientConn, *proto.Midd
 	nextSocketAddr := GetEnv("OUT_SOCKET", "")
 	if nextSocketAddr != "" {
 		var opts []grpc.DialOption
-		opts = append(opts, grpc.WithInsecure())
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		opts = append(opts, grpc.WithBlock())
 
 		conn, err := grpc.Dial(nextSocketAddr, opts...)

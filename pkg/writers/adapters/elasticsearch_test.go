@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 )
@@ -98,7 +97,7 @@ func TestBulkActionWithSingleItemSucessful(t *testing.T) {
 	response := esapi.Response{
 		StatusCode: 201,
 		Header:     nil,
-		Body:       ioutil.NopCloser(strings.NewReader("{\"errors\":false,\"items\":[{\"create\":{\"status\":200}}]}")),
+		Body:       io.NopCloser(strings.NewReader("{\"errors\":false,\"items\":[{\"create\":{\"status\":200}}]}")),
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
@@ -125,7 +124,7 @@ func TestBulkActionWithSingleItemUnsuccessful(t *testing.T) {
 	response := esapi.Response{
 		StatusCode: 201,
 		Header:     nil,
-		Body:       ioutil.NopCloser(strings.NewReader("{\"errors\":true,\"items\":[{\"create\":{\"status\":409}}]}")),
+		Body:       io.NopCloser(strings.NewReader("{\"errors\":true,\"items\":[{\"create\":{\"status\":409}}]}")),
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
@@ -152,7 +151,7 @@ func TestBulkActionWithMixedItemStatus(t *testing.T) {
 	response := esapi.Response{
 		StatusCode: 201,
 		Header:     nil,
-		Body:       ioutil.NopCloser(strings.NewReader("{\"errors\":true,\"items\":[{\"create\":{\"status\":409}},{\"create\":{\"status\":200}},{\"create\":{\"status\":409}}]}")),
+		Body:       io.NopCloser(strings.NewReader("{\"errors\":true,\"items\":[{\"create\":{\"status\":409}},{\"create\":{\"status\":200}},{\"create\":{\"status\":409}}]}")),
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
@@ -189,7 +188,7 @@ func TestBulkActionWithOnlyMetadata(t *testing.T) {
 	response := esapi.Response{
 		StatusCode: 201,
 		Header:     nil,
-		Body:       ioutil.NopCloser(strings.NewReader("{\"errors\":false,\"items\":[{\"delete\":{\"status\":200}}]}")),
+		Body:       io.NopCloser(strings.NewReader("{\"errors\":false,\"items\":[{\"delete\":{\"status\":200}}]}")),
 	}
 	expectedBody := "{\"delete\":{\"_id\":\"123\"}}\n"
 	bulk.On("func1", expectedBody).Once().Return(&response, nil)

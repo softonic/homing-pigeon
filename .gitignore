@@ -12,6 +12,5 @@
 *.out
 
 # Ignore generated files
-pkg/generatedServices
 bin
 sockets

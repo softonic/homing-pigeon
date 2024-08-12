@@ -32,7 +32,7 @@ func (m Message) Ack() (Ack, error) {
 	}, nil
 }
 
-func (m Message) setAsAcked() error {
+func (m *Message) setAsAcked() error {
 	if m.acked {
 		return errors.New("Message already acked")
 	}

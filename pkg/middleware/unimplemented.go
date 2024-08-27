@@ -2,14 +2,15 @@ package middleware
 
 import (
 	"context"
+	"net"
+	"os"
+	"path/filepath"
+
 	. "github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/klog"
-	"net"
-	"os"
-	"path/filepath"
 )
 
 // @TODO Tests missing
@@ -70,9 +71,8 @@ func (b *UnimplementedMiddleware) getOutputGrpc() (*grpc.ClientConn, *proto.Midd
 	if nextSocketAddr != "" {
 		var opts []grpc.DialOption
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		opts = append(opts, grpc.WithBlock())
 
-		conn, err := grpc.Dial(nextSocketAddr, opts...)
+		conn, err := grpc.NewClient(nextSocketAddr, opts...)
 		if err != nil {
 			klog.Errorf("fail to dial: %v", err)
 		}

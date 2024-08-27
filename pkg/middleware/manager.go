@@ -2,13 +2,14 @@ package middleware
 
 import (
 	"context"
+	"time"
+
 	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/klog"
-	"time"
 )
 
 // @TODO Tests missing
@@ -30,9 +31,8 @@ func (m *MiddlwareManager) Start() {
 
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	opts = append(opts, grpc.WithBlock())
 
-	conn, err := grpc.Dial(m.MiddlewareAddress, opts...)
+	conn, err := grpc.NewClient(m.MiddlewareAddress, opts...)
 	if err != nil {
 		klog.Errorf("fail to dial: %v", err)
 	}

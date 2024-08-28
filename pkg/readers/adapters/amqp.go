@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"html/template"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	amqpAdapter "github.com/softonic/homing-pigeon/pkg/readers/adapters/amqp"
 	"github.com/streadway/amqp"
-	"html/template"
 	"k8s.io/klog"
-	"os"
-	"strconv"
-	"strings"
 )
 
 type Amqp struct {

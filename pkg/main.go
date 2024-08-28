@@ -1,13 +1,14 @@
 package main
 
 import (
+	"os"
+	"strconv"
+
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/middleware"
 	"github.com/softonic/homing-pigeon/pkg/readers"
 	"github.com/softonic/homing-pigeon/pkg/writers"
 	"k8s.io/klog"
-	"os"
-	"strconv"
 )
 
 func main() {
@@ -18,15 +19,14 @@ func main() {
 	msgCh2 := make(chan messages.Message, bufLen)
 
 	bufLen = GetBufferLength("ACK_BUFFER_LENGTH")
-	ackCh1 := make(chan messages.Ack, bufLen)
-	ackCh2 := make(chan messages.Ack, bufLen)
+	ackCh := make(chan messages.Ack, bufLen)
 
-	reader, err := readers.NewReader(msgCh1, ackCh2)
+	reader, err := readers.NewReader(msgCh1, ackCh)
 	if err != nil {
 		panic(err)
 	}
 
-	writer, err := writers.NewWriter(msgCh2, ackCh1)
+	writer, err := writers.NewWriter(msgCh2, ackCh)
 	if err != nil {
 		panic(err)
 	}

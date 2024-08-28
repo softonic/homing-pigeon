@@ -1,4 +1,4 @@
-FROM golang:1.19-buster AS build
+FROM golang:1.23-bookworm AS build
 
 RUN apt-get update \
     && apt-get install -y protobuf-compiler

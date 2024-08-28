@@ -5,7 +5,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.7.0
-	google.golang.org/grpc v1.64.1
+	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2
 	k8s.io/klog v1.0.0
 )
@@ -24,4 +24,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
-go 1.19
+go 1.23

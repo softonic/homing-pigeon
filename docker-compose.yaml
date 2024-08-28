@@ -25,7 +25,7 @@ services:
       ACK_BUFFER_LENGTH: "500"
       GRPC_GO_LOG_VERBOSITY_LEVEL: 99
       GRPC_GO_LOG_SEVERITY_LEVEL: info
-      # MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hp"
+      MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hp"
       READ_ADAPTER: "AMQP"
       WRITE_ADAPTER: "ELASTIC"
     depends_on:
@@ -58,7 +58,6 @@ services:
       - bootstrap.memory_lock=true
       - discovery.seed_hosts=elasticsearch
       - cluster.initial_master_nodes=elasticsearch
-      - bootstrap.system_call_filter=false
     ulimits:
       memlock:
         soft: -1

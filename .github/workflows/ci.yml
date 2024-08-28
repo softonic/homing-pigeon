@@ -30,9 +30,8 @@ jobs:
           sudo apt-get install -y protobuf-compiler
           make build
       - name: Lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.54
-          skip-pkg-cache: true
+          version: latest
       - name: Test
         run: go test -v -race ./...

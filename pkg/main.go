@@ -19,14 +19,14 @@ func main() {
 	msgCh2 := make(chan messages.Message, bufLen)
 
 	bufLen = GetBufferLength("ACK_BUFFER_LENGTH")
-	ackCh1 := make(chan messages.Ack, bufLen)
+	ackCh := make(chan messages.Ack, bufLen)
 
-	reader, err := readers.NewReader(msgCh1, ackCh1)
+	reader, err := readers.NewReader(msgCh1, ackCh)
 	if err != nil {
 		panic(err)
 	}
 
-	writer, err := writers.NewWriter(msgCh2, ackCh1)
+	writer, err := writers.NewWriter(msgCh2, ackCh)
 	if err != nil {
 		panic(err)
 	}

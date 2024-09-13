@@ -57,7 +57,7 @@ func TestAdapterReceiveInvalidMessage(t *testing.T) {
 
 	bulk.AssertNotCalled(t, "func1")
 	assert.Len(t, acks, 1)
-	assert.False(t, acks[0].Body[0] != 0)
+	assert.True(t, acks[0].Body[0] == 0)
 }
 
 func TestBulkActionWithErrorsMustDiscardAllMessages(t *testing.T) {

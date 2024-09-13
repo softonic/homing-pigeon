@@ -1,10 +1,11 @@
 package adapters
 
 import (
-	"github.com/softonic/homing-pigeon/pkg/messages"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/softonic/homing-pigeon/pkg/messages"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestProduceMessageQuantity(t *testing.T) {
@@ -18,10 +19,10 @@ func TestProduceMessageQuantity(t *testing.T) {
 }
 
 func TestAcksAreRead(t *testing.T) {
-	ackChannel := make(chan messages.Ack, 2)
-	ackChannel <- messages.Ack{
-		Id:  uint64(1),
-		Ack: true,
+	ackChannel := make(chan messages.Message, 2)
+	ackChannel <- messages.Message{
+		Id:   uint64(1),
+		Body: []byte{1},
 	}
 
 	obj := new(Dummy)

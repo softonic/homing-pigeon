@@ -1,18 +1,19 @@
 package adapters
 
 import (
-	"github.com/softonic/homing-pigeon/pkg/messages"
 	"time"
+
+	"github.com/softonic/homing-pigeon/pkg/messages"
 )
 
 type Dummy struct{}
 
-func (d *Dummy) ProcessMessages(msgs []messages.Message) []messages.Ack {
-	var processedMsg []messages.Ack
+func (d *Dummy) ProcessMessages(msgs []messages.Message) []messages.Message {
+	var processedMsg []messages.Message
 	for i := 0; i < len(msgs); i++ {
-		processedMsg = append(processedMsg, messages.Ack{
-			Id:  uint64(i),
-			Ack: true,
+		processedMsg = append(processedMsg, messages.Message{
+			Id:   uint64(i),
+			Body: []byte{1},
 		})
 	}
 	return processedMsg

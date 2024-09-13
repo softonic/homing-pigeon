@@ -1,12 +1,13 @@
 package adapters
 
 import (
+	"testing"
+	"time"
+
 	"github.com/softonic/homing-pigeon/mocks"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestProcessMessage(t *testing.T) {
@@ -43,7 +44,7 @@ func TestProcessMessage(t *testing.T) {
 
 func TestHandleAck(t *testing.T) {
 	expectedMessages := 1
-	ackChannel := make(chan messages.Ack, expectedMessages+1)
+	ackChannel := make(chan messages.Message, expectedMessages+1)
 
 	channel := new(mocks.Channel)
 	expectedId := uint64(42)
@@ -55,9 +56,9 @@ func TestHandleAck(t *testing.T) {
 		Ch:               channel,
 	}
 
-	ackChannel <- messages.Ack{
-		Id:  expectedId,
-		Ack: true,
+	ackChannel <- messages.Message{
+		Id:   expectedId,
+		Body: []byte{1},
 	}
 
 	go obj.HandleAck(ackChannel)
@@ -74,7 +75,7 @@ func TestHandleAck(t *testing.T) {
 
 func TestHandleNack(t *testing.T) {
 	expectedMessages := 1
-	ackChannel := make(chan messages.Ack, expectedMessages+1)
+	ackChannel := make(chan messages.Message, expectedMessages+1)
 
 	channel := new(mocks.Channel)
 	expectedId := uint64(42)
@@ -86,9 +87,9 @@ func TestHandleNack(t *testing.T) {
 		Ch:               channel,
 	}
 
-	ackChannel <- messages.Ack{
-		Id:  expectedId,
-		Ack: false,
+	ackChannel <- messages.Message{
+		Id:   expectedId,
+		Body: []byte{0},
 	}
 
 	go obj.HandleAck(ackChannel)
@@ -105,7 +106,7 @@ func TestHandleNack(t *testing.T) {
 
 func TestHandleMixedAcks(t *testing.T) {
 	expectedMessages := 1
-	ackChannel := make(chan messages.Ack, expectedMessages+1)
+	ackChannel := make(chan messages.Message, expectedMessages+1)
 
 	channel := new(mocks.Channel)
 	expectedAckId := uint64(42)
@@ -119,13 +120,13 @@ func TestHandleMixedAcks(t *testing.T) {
 		Ch:               channel,
 	}
 
-	ackChannel <- messages.Ack{
-		Id:  expectedAckId,
-		Ack: true,
+	ackChannel <- messages.Message{
+		Id:   expectedAckId,
+		Body: []byte{1},
 	}
-	ackChannel <- messages.Ack{
-		Id:  expectedNackId,
-		Ack: false,
+	ackChannel <- messages.Message{
+		Id:   expectedNackId,
+		Body: []byte{0},
 	}
 
 	go obj.HandleAck(ackChannel)

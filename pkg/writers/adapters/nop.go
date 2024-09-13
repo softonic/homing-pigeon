@@ -1,14 +1,15 @@
 package adapters
 
 import (
-	"github.com/softonic/homing-pigeon/pkg/messages"
 	"time"
+
+	"github.com/softonic/homing-pigeon/pkg/messages"
 )
 
 type Nop struct{}
 
-func (wa *Nop) ProcessMessages(msgs []messages.Message) []messages.Ack {
-	acks := make([]messages.Ack, 0)
+func (wa *Nop) ProcessMessages(msgs []messages.Message) []messages.Message {
+	acks := make([]messages.Message, 0)
 	for _, msg := range msgs {
 		ack, err := msg.Ack()
 		if err == nil {

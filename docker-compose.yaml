@@ -1,9 +1,7 @@
-version: '3.7'
-
 services:
   homing-pigeon:
     volumes:
-    - ./sockets:/tmp
+    - shared_socket:/tmp
     - ./:/go/src/github.com/softonic/homing-pigeon
     build:
       context: .
@@ -25,18 +23,28 @@ services:
       ACK_BUFFER_LENGTH: "500"
       GRPC_GO_LOG_VERBOSITY_LEVEL: 99
       GRPC_GO_LOG_SEVERITY_LEVEL: info
-      MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hp"
+      REQUEST_MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hprq"
+      RESPONSE_MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hprp"
       READ_ADAPTER: "AMQP"
       WRITE_ADAPTER: "ELASTIC"
     depends_on:
       rabbit-mq:
         condition: service_healthy
-  hp-middleware-pass:
+  request-middleware-pass:
+    platform: linux/amd64
     volumes:
-      - ./sockets:/tmp
+      - shared_socket:/tmp
     image: softonic/hp-pass-middleware:0.1.0
     environment:
-      IN_SOCKET: "/tmp/hp"
+      IN_SOCKET: "/tmp/hprq"
+    command: ["-stderrthreshold=INFO"]
+  reponse-middleware-pass:
+    platform: linux/amd64
+    volumes:
+      - shared_socket:/tmp
+    image: softonic/hp-pass-middleware:0.1.0
+    environment:
+      IN_SOCKET: "/tmp/hprp"
     command: ["-stderrthreshold=INFO"]
   rabbit-mq:
     image: rabbitmq:3.8-management
@@ -49,6 +57,7 @@ services:
       timeout: 20s
       retries: 5
   elasticsearch:
+    platform: linux/amd64
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.4.2
     ports:
       - 9200:9200
@@ -58,7 +67,12 @@ services:
       - bootstrap.memory_lock=true
       - discovery.seed_hosts=elasticsearch
       - cluster.initial_master_nodes=elasticsearch
+      - bootstrap.system_call_filter=false
     ulimits:
       memlock:
         soft: -1
         hard: -1
+
+volumes:
+  shared_socket:
+    driver: local

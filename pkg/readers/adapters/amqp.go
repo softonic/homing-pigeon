@@ -52,9 +52,9 @@ func (a *Amqp) processMessages(writeChannel chan<- messages.Message) {
 	}
 }
 
-func (a *Amqp) HandleAck(ackChannel <-chan messages.Ack) {
+func (a *Amqp) HandleAck(ackChannel <-chan messages.Message) {
 	for ack := range ackChannel {
-		if ack.Ack {
+		if ack.Body[0] == 1 {
 			err := a.Ch.Ack(ack.Id.(uint64), false)
 			if err != nil {
 				klog.Error(err)
@@ -69,7 +69,8 @@ func (a *Amqp) HandleAck(ackChannel <-chan messages.Ack) {
 	}
 }
 
-func NewAmqpReaderAdapter(config amqpAdapter.Config) (ReadAdapter, error) {
+// NewAMQPAdapter creates a new instance of AMQP adapter.
+func NewAMQPAdapter() (ReadAdapter, error) {
 	failOnError := func(err error, msg string) {
 		if err != nil {
 			klog.Errorf("%s: %s", msg, err)
@@ -78,6 +79,11 @@ func NewAmqpReaderAdapter(config amqpAdapter.Config) (ReadAdapter, error) {
 	var err error
 	var conn *amqp.Connection
 	caPath := os.Getenv("RABBITMQ_CA_PATH")
+
+	config, err := NewAmqpConfig()
+	if err != nil {
+		return nil, err
+	}
 
 	if caPath != "" {
 		cfg := new(tls.Config)

@@ -2,8 +2,9 @@ package adapters
 
 import (
 	"fmt"
-	"github.com/softonic/homing-pigeon/pkg/messages"
 	"strconv"
+
+	"github.com/softonic/homing-pigeon/pkg/messages"
 )
 
 type Dummy struct{}
@@ -18,7 +19,7 @@ func (d *Dummy) Listen(msgChannel chan<- messages.Message) {
 	}
 }
 
-func (d *Dummy) HandleAck(ackChannel <-chan messages.Ack) {
+func (d *Dummy) HandleAck(ackChannel <-chan messages.Message) {
 	for ack := range ackChannel {
 		fmt.Print("Acked " + strconv.Itoa(int(ack.Id.(uint64))) + "\n")
 	}

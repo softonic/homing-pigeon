@@ -2,13 +2,14 @@ package adapters
 
 import (
 	"bytes"
+	"io"
+	"strings"
+	"testing"
+
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"io"
-	"strings"
-	"testing"
 )
 
 /**
@@ -56,7 +57,7 @@ func TestAdapterReceiveInvalidMessage(t *testing.T) {
 
 	bulk.AssertNotCalled(t, "func1")
 	assert.Len(t, acks, 1)
-	assert.False(t, acks[0].Ack)
+	assert.False(t, acks[0].Body[0] != 0)
 }
 
 func TestBulkActionWithErrorsMustDiscardAllMessages(t *testing.T) {
@@ -83,7 +84,7 @@ func TestBulkActionWithErrorsMustDiscardAllMessages(t *testing.T) {
 
 	bulk.AssertExpectations(t)
 	assert.Len(t, acks, 1)
-	assert.False(t, acks[0].Ack)
+	assert.True(t, acks[0].Body[0] == 0)
 }
 
 func TestBulkActionWithSingleItemSucessful(t *testing.T) {
@@ -110,7 +111,7 @@ func TestBulkActionWithSingleItemSucessful(t *testing.T) {
 
 	bulk.AssertExpectations(t)
 	assert.Len(t, acks, 1)
-	assert.True(t, acks[0].Ack)
+	assert.True(t, acks[0].Body[0] == 1)
 }
 
 func TestBulkActionWithSingleItemUnsuccessful(t *testing.T) {
@@ -137,7 +138,7 @@ func TestBulkActionWithSingleItemUnsuccessful(t *testing.T) {
 
 	bulk.AssertExpectations(t)
 	assert.Len(t, acks, 1)
-	assert.False(t, acks[0].Ack)
+	assert.True(t, acks[0].Body[0] == 0)
 }
 
 func TestBulkActionWithMixedItemStatus(t *testing.T) {
@@ -172,9 +173,9 @@ func TestBulkActionWithMixedItemStatus(t *testing.T) {
 
 	bulk.AssertExpectations(t)
 	assert.Len(t, acks, 3)
-	assert.False(t, acks[0].Ack)
-	assert.True(t, acks[1].Ack)
-	assert.False(t, acks[2].Ack)
+	assert.True(t, acks[0].Body[0] == 0)
+	assert.True(t, acks[1].Body[0] == 1)
+	assert.True(t, acks[2].Body[0] == 0)
 }
 
 func TestBulkActionWithOnlyMetadata(t *testing.T) {
@@ -202,7 +203,7 @@ func TestBulkActionWithOnlyMetadata(t *testing.T) {
 
 	bulk.AssertExpectations(t)
 	assert.Len(t, acks, 1)
-	assert.True(t, acks[0].Ack)
+	assert.True(t, acks[0].Body[0] == 1)
 }
 
 func TestBulkActionWithNoMetadata(t *testing.T) {
@@ -223,5 +224,5 @@ func TestBulkActionWithNoMetadata(t *testing.T) {
 	bulk.AssertNotCalled(t, "func1", mock.Anything)
 	bulk.AssertExpectations(t)
 	assert.Len(t, acks, 1)
-	assert.False(t, acks[0].Ack)
+	assert.Empty(t, acks[0].Body)
 }

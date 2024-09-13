@@ -1,12 +1,13 @@
 package writers
 
 import (
+	"testing"
+	"time"
+
 	"github.com/softonic/homing-pigeon/mocks"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
-	"time"
 )
 
 func TestAdapterProcessSingleMessage(t *testing.T) {
@@ -18,7 +19,7 @@ func TestAdapterProcessSingleMessage(t *testing.T) {
 	mockProcessMessages(writeAdapter)
 
 	msgChannel := make(chan messages.Message, 1)
-	ackChannel := make(chan messages.Ack, 1)
+	ackChannel := make(chan messages.Message, 1)
 
 	writer := Writer{
 		WriteAdapter: writeAdapter,
@@ -57,7 +58,7 @@ func TestAdapterProcessBulkMessages(t *testing.T) {
 	mockProcessMessages(writeAdapter)
 
 	msgChannel := make(chan messages.Message, expectedMessages+1)
-	ackChannel := make(chan messages.Ack, expectedMessages+1)
+	ackChannel := make(chan messages.Message, expectedMessages+1)
 
 	writer := Writer{
 		WriteAdapter: writeAdapter,
@@ -90,7 +91,7 @@ func TestAdapterTimeoutProcessMessages(t *testing.T) {
 	mockProcessMessages(writeAdapter)
 
 	msgChannel := make(chan messages.Message, expectedMessages+1)
-	ackChannel := make(chan messages.Ack, expectedMessages+1)
+	ackChannel := make(chan messages.Message, expectedMessages+1)
 
 	writer := Writer{
 		WriteAdapter: writeAdapter,
@@ -129,12 +130,12 @@ func writeMessagesToChannel(msgChannel *chan messages.Message) {
 	}
 }
 
-func getAcks(n int) []messages.Ack {
-	acks := make([]messages.Ack, n)
+func getAcks(n int) []messages.Message {
+	acks := make([]messages.Message, n)
 	for i := 0; i < n; i++ {
-		acks[i] = messages.Ack{
-			Id:  uint64(i),
-			Ack: false,
+		acks[i] = messages.Message{
+			Id:   uint64(i),
+			Body: []byte{0},
 		}
 	}
 	return acks

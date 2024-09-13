@@ -1,17 +1,18 @@
 package writers
 
 import (
+	"sync"
+	"time"
+
 	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/writers/adapters"
 	"k8s.io/klog"
-	"sync"
-	"time"
 )
 
 type Writer struct {
 	MsgChannel   <-chan messages.Message
-	AckChannel   chan<- messages.Ack
+	AckChannel   chan<- messages.Message
 	msgs         []messages.Message
 	WriteAdapter adapters.WriteAdapter
 	mutex        *sync.Mutex
@@ -35,7 +36,7 @@ func (ew *Writer) shouldProcess() bool {
 	return res
 }
 
-func (ew *Writer) processAllMessages(msgChannel <-chan messages.Message, ackChannel chan<- messages.Ack) {
+func (ew *Writer) processAllMessages(msgChannel <-chan messages.Message, ackChannel chan<- messages.Message) {
 	for msg := range msgChannel {
 		ew.appendMessage(msg)
 		if ew.shouldProcess() {
@@ -44,14 +45,14 @@ func (ew *Writer) processAllMessages(msgChannel <-chan messages.Message, ackChan
 	}
 }
 
-func (ew *Writer) timeout(ackChannel chan<- messages.Ack) {
+func (ew *Writer) timeout(ackChannel chan<- messages.Message) {
 	for {
 		time.Sleep(ew.WriteAdapter.GetTimeout())
 		go ew.trigger(ackChannel)
 	}
 }
 
-func (ew *Writer) trigger(ackChannel chan<- messages.Ack) {
+func (ew *Writer) trigger(ackChannel chan<- messages.Message) {
 	ew.mutex.Lock()
 
 	acks := ew.WriteAdapter.ProcessMessages(ew.msgs)
@@ -61,13 +62,13 @@ func (ew *Writer) trigger(ackChannel chan<- messages.Ack) {
 	ew.mutex.Unlock()
 }
 
-func (ew *Writer) sendAcks(acks []messages.Ack, ackChannel chan<- messages.Ack) {
+func (ew *Writer) sendAcks(acks []messages.Message, ackChannel chan<- messages.Message) {
 	for _, ack := range acks {
 		ackChannel <- ack
 	}
 }
 
-func NewWriter(outputChannel chan messages.Message, ackChannel chan messages.Ack) (*Writer, error) {
+func NewWriter(outputChannel chan messages.Message, ackChannel chan messages.Message) (*Writer, error) {
 
 	var err error
 	var writeAdapter adapters.WriteAdapter

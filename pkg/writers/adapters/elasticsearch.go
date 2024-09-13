@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	esAdapter "github.com/softonic/homing-pigeon/pkg/writers/adapters/elasticsearch"
 	"k8s.io/klog"
-	"os"
-	"strconv"
-	"time"
 )
 
 type Elasticsearch struct {
@@ -20,8 +21,8 @@ type Elasticsearch struct {
 	Bulk          esapi.Bulk
 }
 
-func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack {
-	acks := make([]messages.Ack, len(msgs))
+func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Message {
+	acks := make([]messages.Message, len(msgs))
 
 	if len(msgs) == 0 {
 		return acks
@@ -61,7 +62,7 @@ func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Ack
 	return acks
 }
 
-func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBulkResponse, msgs []messages.Message, acks []messages.Ack) {
+func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBulkResponse, msgs []messages.Message, acks []messages.Message) {
 	maxValidStatus := 299
 
 	responseItemPos := 0
@@ -103,7 +104,7 @@ func (es *Elasticsearch) getResponseFromResult(result *esapi.Response) esAdapter
 	return response
 }
 
-func (es *Elasticsearch) setAllNacks(msgs []messages.Message, acks []messages.Ack) {
+func (es *Elasticsearch) setAllNacks(msgs []messages.Message, acks []messages.Message) {
 	for i, msg := range msgs {
 		nack, err := msg.Nack()
 		if err == nil {

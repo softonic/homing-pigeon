@@ -33,11 +33,17 @@ func main() {
 		panic(err)
 	}
 
-	requestMiddleWareAddress := helpers.GetEnv("REQUEST_MIDDLEWARES_SOCKET", "")
-	requestMiddleware := middleware.NewMiddlewareManager(msgCh1, msgCh2, requestMiddleWareAddress)
+	requestMiddleware := middleware.NewMiddlewareManager(
+		msgCh1,
+		msgCh2,
+		helpers.GetEnv("REQUEST_MIDDLEWARES_SOCKET", ""),
+	)
 
-	responseMiddleWareAddress := helpers.GetEnv("RESPONSE_MIDDLEWARES_SOCKET", "")
-	responseMiddleware := middleware.NewMiddlewareManager(ackCh2, ackCh1, responseMiddleWareAddress)
+	responseMiddleware := middleware.NewMiddlewareManager(
+		ackCh2,
+		ackCh1,
+		helpers.GetEnv("RESPONSE_MIDDLEWARES_SOCKET", ""),
+	)
 
 	go reader.Start()
 	go requestMiddleware.Start()

@@ -16,32 +16,32 @@ func main() {
 	klog.InitFlags(nil)
 
 	bufLen := GetBufferLength("MESSAGE_BUFFER_LENGTH")
-	msgCh1 := make(chan messages.Message, bufLen)
-	msgCh2 := make(chan messages.Message, bufLen)
+	msgChBeforeMiddleware := make(chan messages.Message, bufLen)
+	msgChAfterMiddleware := make(chan messages.Message, bufLen)
 
 	bufLen = GetBufferLength("ACK_BUFFER_LENGTH")
-	ackCh1 := make(chan messages.Message, bufLen)
-	ackCh2 := make(chan messages.Message, bufLen)
+	ackChBeforeMiddleware := make(chan messages.Message, bufLen)
+	ackChAfterMiddleware := make(chan messages.Message, bufLen)
 
-	reader, err := readers.NewReader(msgCh1, ackCh1)
+	reader, err := readers.NewReader(msgChBeforeMiddleware, ackChAfterMiddleware)
 	if err != nil {
 		panic(err)
 	}
 
-	writer, err := writers.NewWriter(msgCh2, ackCh2)
+	writer, err := writers.NewWriter(msgChAfterMiddleware, ackChBeforeMiddleware)
 	if err != nil {
 		panic(err)
 	}
 
 	requestMiddleware := middleware.NewMiddlewareManager(
-		msgCh1,
-		msgCh2,
+		msgChBeforeMiddleware,
+		msgChAfterMiddleware,
 		helpers.GetEnv("REQUEST_MIDDLEWARES_SOCKET", ""),
 	)
 
 	responseMiddleware := middleware.NewMiddlewareManager(
-		ackCh2,
-		ackCh1,
+		ackChBeforeMiddleware,
+		ackChAfterMiddleware,
 		helpers.GetEnv("RESPONSE_MIDDLEWARES_SOCKET", ""),
 	)
 

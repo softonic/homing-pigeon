@@ -16,8 +16,8 @@ stress-build: dep generate-proto
 docker-build:
 	docker build -t softonic/homing-pigeon:${TAG} .
 mock:
-	mockery -name=WriteAdapter -recursive
-	mockery -name=Channel -recursive
-	mockery -name=Connection -recursive
+	mockery --name=WriteAdapter -r
+	mockery --name=Channel -r
+	mockery --name=Connection -r
 test:
 	gotest -race -count=1 ./... -v

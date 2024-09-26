@@ -7,18 +7,21 @@ import (
 	"k8s.io/klog"
 )
 
+// Reader represents a reader for handling messages.
 type Reader struct {
 	ReadAdapter adapters.ReadAdapter
 	MsgChannel  chan<- messages.Message
-	AckChannel  <-chan messages.Ack
+	AckChannel  <-chan messages.Message
 }
 
+// Start starts the reader.
 func (r *Reader) Start() {
 	go r.ReadAdapter.HandleAck(r.AckChannel)
 	r.ReadAdapter.Listen(r.MsgChannel)
 }
 
-func NewReader(inputChannel chan messages.Message, ackChannel chan messages.Ack) (*Reader, error) {
+// NewReader creates a new Reader instance.
+func NewReader(inputChannel chan messages.Message, ackChannel chan messages.Message) (*Reader, error) {
 
 	var err error
 	var readAdapter adapters.ReadAdapter
@@ -26,7 +29,7 @@ func NewReader(inputChannel chan messages.Message, ackChannel chan messages.Ack)
 
 	switch adapter {
 	case "AMQP":
-		readAdapter, err = NewAMQPAdapter()
+		readAdapter, err = adapters.NewAMQPAdapter()
 	default:
 		klog.Warning("Reader not defined, using dummy implementation")
 		readAdapter, err = &adapters.Dummy{}, nil
@@ -37,13 +40,4 @@ func NewReader(inputChannel chan messages.Message, ackChannel chan messages.Ack)
 		MsgChannel:  inputChannel,
 		AckChannel:  ackChannel,
 	}, err
-}
-
-func NewAMQPAdapter() (adapters.ReadAdapter, error) {
-
-	amqpConfig, err := adapters.NewAmqpConfig()
-	if err != nil {
-		return nil, err
-	}
-	return adapters.NewAmqpReaderAdapter(amqpConfig)
 }

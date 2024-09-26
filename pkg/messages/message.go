@@ -8,27 +8,27 @@ type Message struct {
 	acked bool
 }
 
-func (m Message) Nack() (Ack, error) {
+func (m Message) Nack() (Message, error) {
 	err := m.setAsAcked()
 	if err != nil {
-		return Ack{}, err
+		return Message{}, err
 	}
 
-	return Ack{
-		Id:  m.Id,
-		Ack: false,
+	return Message{
+		Id:   m.Id,
+		Body: []byte{0},
 	}, nil
 }
 
-func (m Message) Ack() (Ack, error) {
+func (m Message) Ack() (Message, error) {
 	err := m.setAsAcked()
 	if err != nil {
-		return Ack{}, err
+		return Message{}, err
 	}
 
-	return Ack{
-		Id:  m.Id,
-		Ack: true,
+	return Message{
+		Id:   m.Id,
+		Body: []byte{1},
 	}, nil
 }
 

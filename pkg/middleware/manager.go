@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/proto"
 	"google.golang.org/grpc"
@@ -19,6 +18,7 @@ type MiddlwareManager struct {
 	MiddlewareAddress string
 }
 
+// Start starts the middleware manager.
 func (m *MiddlwareManager) Start() {
 	if m.isMiddlewareNotAvailable() {
 		klog.V(1).Infof("Middlewares not available")
@@ -66,10 +66,11 @@ func (m *MiddlwareManager) isMiddlewareNotAvailable() bool {
 	return m.MiddlewareAddress == ""
 }
 
-func NewMiddlewareManager(msgCh1 chan messages.Message, msgCh2 chan messages.Message) *MiddlwareManager {
+// NewMiddlewareManager creates a new instance of MiddlwareManager.
+func NewMiddlewareManager(inputChannel chan messages.Message, outputChannel chan messages.Message, address string) *MiddlwareManager {
 	return &MiddlwareManager{
-		InputChannel:      msgCh1,
-		OutputChannel:     msgCh2,
-		MiddlewareAddress: helpers.GetEnv("MIDDLEWARES_SOCKET", ""),
+		InputChannel:      inputChannel,
+		OutputChannel:     outputChannel,
+		MiddlewareAddress: address,
 	}
 }

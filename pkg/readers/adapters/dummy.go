@@ -7,7 +7,7 @@ import (
 	"github.com/softonic/homing-pigeon/pkg/messages"
 )
 
-type Dummy struct{}
+type Dummy struct{} asdasdasdasd
 
 func (d *Dummy) Listen(msgChannel chan<- messages.Message) {
 	for i := 0; i < 100; i++ {

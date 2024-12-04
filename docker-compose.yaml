@@ -1,8 +1,8 @@
 services:
   homing-pigeon:
     volumes:
-    - shared_socket:/tmp
-    - ./:/go/src/github.com/softonic/homing-pigeon
+      - shared_socket:/tmp
+      - ./:/go/src/github.com/softonic/homing-pigeon
     build:
       context: .
       dockerfile: Dockerfile
@@ -31,10 +31,10 @@ services:
       rabbit-mq:
         condition: service_healthy
   request-middleware-pass:
-    platform: linux/amd64
+    platform: linux/arm64
     volumes:
       - shared_socket:/tmp
-    image: softonic/hp-pass-middleware:0.1.0
+    image: softonic/hp-throttling:0.1.0
     environment:
       IN_SOCKET: "/tmp/hprq"
     command: ["-stderrthreshold=INFO"]
@@ -52,7 +52,7 @@ services:
       - 15672:15672
       - 5672:5672
     healthcheck:
-      test: [ "CMD", "rabbitmqctl", "status"]
+      test: ["CMD", "rabbitmqctl", "status"]
       interval: 5s
       timeout: 20s
       retries: 5

@@ -8,7 +8,7 @@ RABBITMQ_USER = 'guest'
 RABBITMQ_PASSWORD = 'guest'
 EXCHANGE_NAME = 'homing-pigeon'
 ROUTING_KEY = ''  # Leave empty or set appropriately
-MESSAGE_COUNT = 1  # Number of messages to send
+MESSAGE_COUNT = 100000  # Number of messages to send
 MESSAGE_BODY = '{"meta": { "index" : { "_index" : "test", "_id" : "1" } },"data": { "field1" : "value1" }}'
 
 def send_messages():

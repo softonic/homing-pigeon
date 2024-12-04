@@ -31,12 +31,14 @@ services:
       rabbit-mq:
         condition: service_healthy
   request-middleware-pass:
-    platform: linux/arm64
+    platform: linux/amd64
     volumes:
       - shared_socket:/tmp
     image: softonic/hp-throttling:0.1.0
     environment:
       IN_SOCKET: "/tmp/hprq"
+      THROTTLE_LIMIT: "10"
+      THROTTLE_BURST: "10"
     command: ["-stderrthreshold=INFO"]
   reponse-middleware-pass:
     platform: linux/amd64

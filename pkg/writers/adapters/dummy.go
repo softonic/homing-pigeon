@@ -8,15 +8,10 @@ import (
 
 type Dummy struct{}
 
-func (d *Dummy) ProcessMessages(msgs []messages.Message) []messages.Message {
-	var processedMsg []messages.Message
-	for i := 0; i < len(msgs); i++ {
-		processedMsg = append(processedMsg, messages.Message{
-			Id:   uint64(i),
-			Body: []byte{1},
-		})
+func (d *Dummy) ProcessMessages(msgs *[]messages.Message) {
+	for i := range *msgs {
+		(*msgs)[i].Ack()
 	}
-	return processedMsg
 }
 
 func (d *Dummy) ShouldProcess(msgs []messages.Message) bool {

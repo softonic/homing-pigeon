@@ -55,9 +55,9 @@ func (ew *Writer) timeout(ackChannel chan<- messages.Message) {
 func (ew *Writer) trigger(ackChannel chan<- messages.Message) {
 	ew.mutex.Lock()
 
-	acks := ew.WriteAdapter.ProcessMessages(ew.msgs)
+	ew.WriteAdapter.ProcessMessages(&ew.msgs)
+	ew.sendAcks(ew.msgs, ackChannel)
 	ew.msgs = make([]messages.Message, 0)
-	ew.sendAcks(acks, ackChannel)
 
 	ew.mutex.Unlock()
 }

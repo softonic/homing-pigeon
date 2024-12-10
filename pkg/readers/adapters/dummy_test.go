@@ -20,10 +20,14 @@ func TestProduceMessageQuantity(t *testing.T) {
 
 func TestAcksAreRead(t *testing.T) {
 	ackChannel := make(chan messages.Message, 2)
-	ackChannel <- messages.Message{
+
+	msg := messages.Message{
 		Id:   uint64(1),
-		Body: []byte{1},
+		Body: []byte("Hello!"),
 	}
+	msg.Ack()
+
+	ackChannel <- msg
 
 	obj := new(Dummy)
 	go obj.HandleAck(ackChannel)

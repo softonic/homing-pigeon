@@ -142,18 +142,17 @@ func getAcks(n int) []messages.Message {
 }
 
 func mockProcessMessages(writeAdapter *mocks.WriteAdapter) {
-	writeAdapter.On("ProcessMessages", mock.MatchedBy(func(msgs []messages.Message) bool {
-		return len(msgs) == 3
+	writeAdapter.On("ProcessMessages", mock.MatchedBy(func(msgs *[]messages.Message) bool {
+		return len(*msgs) == 3
 	})).Maybe().Return(getAcks(3))
 
-	writeAdapter.On("ProcessMessages", mock.MatchedBy(func(msgs []messages.Message) bool {
-		return len(msgs) == 1
+	writeAdapter.On("ProcessMessages", mock.MatchedBy(func(msgs *[]messages.Message) bool {
+		return len(*msgs) == 1
 	})).Maybe().Return(getAcks(1))
-	writeAdapter.On("ProcessMessages", mock.MatchedBy(func(msgs []messages.Message) bool {
-		return len(msgs) == 2
+	writeAdapter.On("ProcessMessages", mock.MatchedBy(func(msgs *[]messages.Message) bool {
+		return len(*msgs) == 2
 	})).Maybe().Return(getAcks(2))
-	writeAdapter.On("ProcessMessages", mock.MatchedBy(func(msgs []messages.Message) bool {
-		return len(msgs) == 0
+	writeAdapter.On("ProcessMessages", mock.MatchedBy(func(msgs *[]messages.Message) bool {
+		return len(*msgs) == 0
 	})).Maybe().Return(getAcks(0))
-
 }

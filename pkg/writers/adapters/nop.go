@@ -8,15 +8,10 @@ import (
 
 type Nop struct{}
 
-func (wa *Nop) ProcessMessages(msgs []messages.Message) []messages.Message {
-	acks := make([]messages.Message, 0)
-	for _, msg := range msgs {
-		ack, err := msg.Ack()
-		if err == nil {
-			acks = append(acks, ack)
-		}
+func (wa *Nop) ProcessMessages(msgs *[]messages.Message) {
+	for i := range *msgs {
+		(*msgs)[i].Ack()
 	}
-	return acks
 }
 
 func (wa *Nop) GetTimeout() time.Duration {

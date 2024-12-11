@@ -21,24 +21,20 @@ type Elasticsearch struct {
 	Bulk          esapi.Bulk
 }
 
-func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Message {
-	acks := make([]messages.Message, len(msgs))
+func (es *Elasticsearch) ProcessMessages(msgs *[]messages.Message) {
 
-	if len(msgs) == 0 {
-		return acks
+	if len(*msgs) == 0 {
+		return
 	}
 
 	var buf bytes.Buffer
 
-	for i, msg := range msgs {
+	for i := range *msgs {
+		msg := &(*msgs)[i]
 		body, err := es.decodeBody(msg.Body)
 		if err != nil {
 			klog.Errorf("Invalid Message: %s", string(msg.Body))
-			nack, err := msg.Nack()
-			if err != nil {
-				klog.Error(err)
-			}
-			acks[i] = nack
+			msg.Nack()
 			continue
 		}
 		err = es.writeToBuffer(&buf, body)
@@ -48,26 +44,27 @@ func (es *Elasticsearch) ProcessMessages(msgs []messages.Message) []messages.Mes
 	}
 
 	if buf.Len() == 0 {
-		return acks
+		return
 	}
 	result, err := es.Bulk(bytes.NewReader(buf.Bytes()))
 	if err != nil || result.IsError() {
 		klog.Warningf("Error in bulk action, %v", err)
-		es.setAllNacks(msgs, acks)
-		return acks
+		es.setAllNacks(msgs)
+		return
 	}
 
 	response := es.getResponseFromResult(result)
-	es.setAcksFromResponse(response, msgs, acks)
-	return acks
+	es.setAcksFromResponse(response, msgs)
 }
 
-func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBulkResponse, msgs []messages.Message, acks []messages.Message) {
+func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBulkResponse, msgs *[]messages.Message) {
 	maxValidStatus := 299
 
 	responseItemPos := 0
-	for ackPos, ack := range acks {
-		if ack.Id != nil {
+	for i := range *msgs {
+		msg := &(*msgs)[i]
+
+		if msg.IsNacked() {
 			continue
 		}
 
@@ -79,15 +76,9 @@ func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBul
 			if status > maxValidStatus {
 				klog.Warningf("Item has invalid status: %v", data)
 
-				ack, err := msgs[ackPos].Nack()
-				if err == nil {
-					acks[ackPos] = ack
-				}
+				msg.Nack()
 			} else {
-				ack, err := msgs[ackPos].Ack()
-				if err == nil {
-					acks[ackPos] = ack
-				}
+				msg.Ack()
 			}
 		}
 		responseItemPos++
@@ -104,12 +95,9 @@ func (es *Elasticsearch) getResponseFromResult(result *esapi.Response) esAdapter
 	return response
 }
 
-func (es *Elasticsearch) setAllNacks(msgs []messages.Message, acks []messages.Message) {
-	for i, msg := range msgs {
-		nack, err := msg.Nack()
-		if err == nil {
-			acks[i] = nack
-		}
+func (es *Elasticsearch) setAllNacks(msgs *[]messages.Message) {
+	for i := range *msgs {
+		(*msgs)[i].Nack()
 	}
 }
 
@@ -119,7 +107,7 @@ func (es *Elasticsearch) writeToBuffer(buf *bytes.Buffer, body esAdapter.Elastic
 		return err
 	}
 	if bytes.Equal(meta, []byte("null")) {
-		return errors.New("Invalid body: meta should be present")
+		return errors.New("invalid body: meta should be present")
 	}
 	data, err := json.Marshal(body.Data)
 	if err != nil {

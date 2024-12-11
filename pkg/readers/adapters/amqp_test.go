@@ -56,10 +56,13 @@ func TestHandleAck(t *testing.T) {
 		Ch:               channel,
 	}
 
-	ackChannel <- messages.Message{
+	msg := messages.Message{
 		Id:   expectedId,
-		Body: []byte{1},
+		Body: []byte("Hello!"),
 	}
+	msg.Ack()
+
+	ackChannel <- msg
 
 	go obj.HandleAck(ackChannel)
 
@@ -87,10 +90,13 @@ func TestHandleNack(t *testing.T) {
 		Ch:               channel,
 	}
 
-	ackChannel <- messages.Message{
+	msg := messages.Message{
 		Id:   expectedId,
-		Body: []byte{0},
+		Body: []byte("Hello!"),
 	}
+	msg.Nack()
+
+	ackChannel <- msg
 
 	go obj.HandleAck(ackChannel)
 
@@ -120,14 +126,20 @@ func TestHandleMixedAcks(t *testing.T) {
 		Ch:               channel,
 	}
 
-	ackChannel <- messages.Message{
+	msgAck := messages.Message{
 		Id:   expectedAckId,
-		Body: []byte{1},
+		Body: []byte("Hello!"),
 	}
-	ackChannel <- messages.Message{
+	msgAck.Ack()
+
+	msgNack := messages.Message{
 		Id:   expectedNackId,
-		Body: []byte{0},
+		Body: []byte("Hello!"),
 	}
+	msgNack.Nack()
+
+	ackChannel <- msgAck
+	ackChannel <- msgNack
 
 	go obj.HandleAck(ackChannel)
 

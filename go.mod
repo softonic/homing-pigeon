@@ -21,6 +21,7 @@ require (
 	github.com/rakyll/gotest v0.0.6 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/vektra/mockery v1.1.2 // indirect
+	go.uber.org/automaxprocs v1.6.0 // indirect
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
@@ -32,4 +33,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-go 1.23
+go 1.23.0

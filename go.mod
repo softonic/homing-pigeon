@@ -4,15 +4,15 @@ require (
 	github.com/elastic/go-elasticsearch/v7 v7.10.0
 	github.com/golang/protobuf v1.5.4
 	github.com/streadway/amqp v1.0.0
-	github.com/stretchr/testify v1.9.0
-	google.golang.org/grpc v1.66.2
-	google.golang.org/protobuf v1.34.2
+	github.com/stretchr/testify v1.10.0
+	google.golang.org/grpc v1.68.1
+	google.golang.org/protobuf v1.35.2
 	k8s.io/klog v1.0.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fatih/color v1.17.0 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

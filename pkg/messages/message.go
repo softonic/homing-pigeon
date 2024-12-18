@@ -1,43 +1,23 @@
 package messages
 
-import "errors"
-
 type Message struct {
 	Id    interface{}
 	Body  []byte
-	acked bool
+	acked *bool
 }
 
-func (m Message) Nack() (Message, error) {
-	err := m.setAsAcked()
-	if err != nil {
-		return Message{}, err
-	}
-
-	return Message{
-		Id:   m.Id,
-		Body: []byte{0},
-	}, nil
+func (m *Message) IsAcked() bool {
+	return m.acked != nil && *m.acked
 }
 
-func (m Message) Ack() (Message, error) {
-	err := m.setAsAcked()
-	if err != nil {
-		return Message{}, err
-	}
-
-	return Message{
-		Id:   m.Id,
-		Body: []byte{1},
-	}, nil
+func (m *Message) IsNacked() bool {
+	return m.acked != nil && !*m.acked
 }
 
-func (m *Message) setAsAcked() error {
-	if m.acked {
-		return errors.New("Message already acked")
-	}
+func (m *Message) Nack() {
+	m.acked = func(b bool) *bool { return &b }(false)
+}
 
-	m.acked = true
-
-	return nil
+func (m *Message) Ack() {
+	m.acked = func(b bool) *bool { return &b }(true)
 }

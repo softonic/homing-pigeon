@@ -33,23 +33,8 @@ func (_m *WriteAdapter) GetTimeout() time.Duration {
 }
 
 // ProcessMessages provides a mock function with given fields: msgs
-func (_m *WriteAdapter) ProcessMessages(msgs []messages.Message) []messages.Message {
-	ret := _m.Called(msgs)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ProcessMessages")
-	}
-
-	var r0 []messages.Message
-	if rf, ok := ret.Get(0).(func([]messages.Message) []messages.Message); ok {
-		r0 = rf(msgs)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]messages.Message)
-		}
-	}
-
-	return r0
+func (_m *WriteAdapter) ProcessMessages(msgs *[]messages.Message) {
+	_m.Called(msgs)
 }
 
 // ShouldProcess provides a mock function with given fields: msgs

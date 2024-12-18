@@ -48,16 +48,18 @@ func TestAdapterReceiveInvalidMessage(t *testing.T) {
 		Bulk:          bulk.getBulkFunc(),
 	}
 
-	acks := esAdapter.ProcessMessages([]messages.Message{
+	msgs := []messages.Message{
 		{
-			Id:   0,
+			Id:   1,
 			Body: []byte("{ Invalid Json }"),
 		},
-	})
+	}
+
+	esAdapter.ProcessMessages(&msgs)
 
 	bulk.AssertNotCalled(t, "func1")
-	assert.Len(t, acks, 1)
-	assert.True(t, acks[0].Body[0] == 0)
+	assert.Len(t, msgs, 1)
+	assert.True(t, msgs[0].IsNacked())
 }
 
 func TestBulkActionWithErrorsMustDiscardAllMessages(t *testing.T) {
@@ -75,16 +77,18 @@ func TestBulkActionWithErrorsMustDiscardAllMessages(t *testing.T) {
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
-	acks := esAdapter.ProcessMessages([]messages.Message{
+	msgs := []messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ \"meta\": \"valid-json\" }"),
 		},
-	})
+	}
+
+	esAdapter.ProcessMessages(&msgs)
 
 	bulk.AssertExpectations(t)
-	assert.Len(t, acks, 1)
-	assert.True(t, acks[0].Body[0] == 0)
+	assert.Len(t, msgs, 1)
+	assert.True(t, msgs[0].IsNacked())
 }
 
 func TestBulkActionWithSingleItemSucessful(t *testing.T) {
@@ -102,16 +106,18 @@ func TestBulkActionWithSingleItemSucessful(t *testing.T) {
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
-	acks := esAdapter.ProcessMessages([]messages.Message{
+	msgs := []messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ \"meta\": \"valid-json\" }"),
 		},
-	})
+	}
+
+	esAdapter.ProcessMessages(&msgs)
 
 	bulk.AssertExpectations(t)
-	assert.Len(t, acks, 1)
-	assert.True(t, acks[0].Body[0] == 1)
+	assert.Len(t, msgs, 1)
+	assert.True(t, msgs[0].IsAcked())
 }
 
 func TestBulkActionWithSingleItemUnsuccessful(t *testing.T) {
@@ -129,16 +135,18 @@ func TestBulkActionWithSingleItemUnsuccessful(t *testing.T) {
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
-	acks := esAdapter.ProcessMessages([]messages.Message{
+	msgs := []messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ \"meta\": \"valid-json\" }"),
 		},
-	})
+	}
+
+	esAdapter.ProcessMessages(&msgs)
 
 	bulk.AssertExpectations(t)
-	assert.Len(t, acks, 1)
-	assert.True(t, acks[0].Body[0] == 0)
+	assert.Len(t, msgs, 1)
+	assert.True(t, msgs[0].IsNacked())
 }
 
 func TestBulkActionWithMixedItemStatus(t *testing.T) {
@@ -156,7 +164,7 @@ func TestBulkActionWithMixedItemStatus(t *testing.T) {
 	}
 	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
 
-	acks := esAdapter.ProcessMessages([]messages.Message{
+	msgs := []messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ \"meta\": \"valid-json\" }"),
@@ -169,13 +177,15 @@ func TestBulkActionWithMixedItemStatus(t *testing.T) {
 			Id:   2,
 			Body: []byte("{ \"meta\": \"valid-json\" }"),
 		},
-	})
+	}
+
+	esAdapter.ProcessMessages(&msgs)
 
 	bulk.AssertExpectations(t)
-	assert.Len(t, acks, 3)
-	assert.True(t, acks[0].Body[0] == 0)
-	assert.True(t, acks[1].Body[0] == 1)
-	assert.True(t, acks[2].Body[0] == 0)
+	assert.Len(t, msgs, 3)
+	assert.True(t, msgs[0].IsNacked())
+	assert.True(t, msgs[1].IsAcked())
+	assert.True(t, msgs[2].IsNacked())
 }
 
 func TestBulkActionWithOnlyMetadata(t *testing.T) {
@@ -194,16 +204,18 @@ func TestBulkActionWithOnlyMetadata(t *testing.T) {
 	expectedBody := "{\"delete\":{\"_id\":\"123\"}}\n"
 	bulk.On("func1", expectedBody).Once().Return(&response, nil)
 
-	acks := esAdapter.ProcessMessages([]messages.Message{
+	msgs := []messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ \"meta\": {\"delete\": {\"_id\":\"123\"}} }"),
 		},
-	})
+	}
+
+	esAdapter.ProcessMessages(&msgs)
 
 	bulk.AssertExpectations(t)
-	assert.Len(t, acks, 1)
-	assert.True(t, acks[0].Body[0] == 1)
+	assert.Len(t, msgs, 1)
+	assert.True(t, msgs[0].IsAcked())
 }
 
 func TestBulkActionWithNoMetadata(t *testing.T) {
@@ -214,15 +226,17 @@ func TestBulkActionWithNoMetadata(t *testing.T) {
 		Bulk:          bulk.getBulkFunc(),
 	}
 
-	acks := esAdapter.ProcessMessages([]messages.Message{
+	msgs := []messages.Message{
 		{
 			Id:   0,
 			Body: []byte("{ \"foobar\": {\"delete\": {\"_id\":\"123\"}} }"),
 		},
-	})
+	}
+
+	esAdapter.ProcessMessages(&msgs)
 
 	bulk.AssertNotCalled(t, "func1", mock.Anything)
 	bulk.AssertExpectations(t)
-	assert.Len(t, acks, 1)
-	assert.Empty(t, acks[0].Body)
+	assert.Len(t, msgs, 1)
+	assert.Empty(t, msgs[0].IsNacked())
 }

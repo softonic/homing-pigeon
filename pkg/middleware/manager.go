@@ -30,7 +30,9 @@ func (m *MiddlwareManager) Start() {
 	klog.V(1).Infof("Middlewares available")
 
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	opts = append(opts,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultServiceConfig(defaultRetryPolicy))
 
 	conn, err := grpc.NewClient(m.MiddlewareAddress, opts...)
 	if err != nil {
@@ -46,11 +48,22 @@ func (m *MiddlwareManager) Start() {
 		klog.V(5).Infof("Sending message to proto")
 		start := time.Now()
 
-		data, err := client.Handle(context.Background(), &proto.Data{
+		data := &proto.Data{
 			Body: message.Body,
-		})
+		}
+
+		// wait for ready up to 12 seconds (including retries)
+		// to handle service discontinuity (external middlewares) or startup order
+		ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), 12*time.Second)
+		handleData, err := client.Handle(ctxTimeout, &proto.Data{
+			Body: message.Body,
+		}, grpc.WaitForReady(true))
+		cancelTimeout()
+
 		if err != nil {
 			klog.Errorf("What happens!? %v", err)
+		} else {
+			data = handleData
 		}
 
 		elapsed := time.Since(start)

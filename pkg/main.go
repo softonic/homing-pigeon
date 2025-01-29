@@ -4,16 +4,15 @@ import (
 	"os"
 	"strconv"
 
-        // Third-party packages, with a blank line separator
-        "k8s.io/klog"
-        _ "go.uber.org/automaxprocs"
+	// Third-party packages, with a blank line separator
+	_ "go.uber.org/automaxprocs"
+	"k8s.io/klog"
 
 	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/middleware"
 	"github.com/softonic/homing-pigeon/pkg/readers"
 	"github.com/softonic/homing-pigeon/pkg/writers"
-
 )
 
 func main() {

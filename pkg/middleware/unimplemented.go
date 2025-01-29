@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 	"os"
-	"path/filepath"
+	"time"
 
 	. "github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/proto"
@@ -20,14 +20,20 @@ type UnimplementedMiddleware struct {
 }
 
 func (b *UnimplementedMiddleware) Next(req *proto.Data) (*proto.Data, error) {
-	resp := req
 	if b.client != nil {
-		var err error
-		_, err = (*b.client).Handle(context.Background(), req)
-		return nil, err
+		klog.V(0).Info("processing next middleware")
+		ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), 12*time.Second)
+		nextResp, err := (*b.client).Handle(ctxTimeout, req, grpc.WaitForReady(true))
+		cancelTimeout()
+		if err != nil {
+			klog.Errorf("Next middleware error %v", err)
+		} else {
+			klog.V(0).Info("next middleware processed")
+			return nextResp, nil
+		}
 	}
-
-	return resp, nil
+	// if there is no next middleware or it fails, return the same request
+	return req, nil
 }
 
 func (b *UnimplementedMiddleware) Listen(middleware proto.MiddlewareServer) {
@@ -53,35 +59,34 @@ func (b *UnimplementedMiddleware) Listen(middleware proto.MiddlewareServer) {
 
 func (b *UnimplementedMiddleware) getInputSocket() string {
 	socket := GetEnv("IN_SOCKET", "")
-
-	err := os.RemoveAll(socket)
-	if err != nil {
-		klog.Errorf("Failed to remove socket: %v", err)
-	}
-
-	err = os.MkdirAll(filepath.Dir(socket), 0775)
-	if err != nil {
-		klog.Errorf("Error creating socket directory: %v", err)
+	if _, err := os.Stat(socket); err == nil {
+		klog.Infof("Removing existing socket %s", socket)
+		err := os.Remove(socket)
+		if err != nil {
+			klog.Errorf("Failed to remove socket: %v", err)
+		}
 	}
 	return socket
 }
 
 func (b *UnimplementedMiddleware) getOutputGrpc() (*grpc.ClientConn, *proto.MiddlewareClient) {
 	nextSocketAddr := GetEnv("OUT_SOCKET", "")
-	if nextSocketAddr != "" {
-		var opts []grpc.DialOption
-		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if nextSocketAddr == "" {
+		return nil, nil
+	}
+	var opts []grpc.DialOption
+	opts = append(opts,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultServiceConfig(defaultRetryPolicy))
 
-		conn, err := grpc.NewClient(nextSocketAddr, opts...)
-		if err != nil {
-			klog.Errorf("fail to dial: %v", err)
-		}
-
-		klog.V(0).Info("Connected to the next middleware")
-
-		client := proto.NewMiddlewareClient(conn)
-		return conn, &client
+	conn, err := grpc.NewClient(nextSocketAddr, opts...)
+	if err != nil {
+		klog.Errorf("failed to create OUT_SOCKET client: %v", err)
+		return nil, nil
 	}
 
-	return nil, nil
+	klog.V(0).Info("Connected to the next middleware")
+
+	client := proto.NewMiddlewareClient(conn)
+	return conn, &client
 }

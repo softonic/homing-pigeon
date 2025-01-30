@@ -48,10 +48,6 @@ func (m *MiddlwareManager) Start() {
 		klog.V(5).Infof("Sending message to proto")
 		start := time.Now()
 
-		data := &proto.Data{
-			Body: message.Body,
-		}
-
 		// wait for ready up to 12 seconds (including retries)
 		// to handle service discontinuity (external middlewares) or startup order
 		ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), 12*time.Second)
@@ -59,17 +55,14 @@ func (m *MiddlwareManager) Start() {
 			Body: message.Body,
 		}, grpc.WaitForReady(true))
 		cancelTimeout()
-
 		if err != nil {
-			klog.Errorf("What happens!? %v", err)
+			klog.Errorf("Error calling middleware %v", err)
 		} else {
-			data = handleData
+			message.Body = handleData.GetBody()
 		}
 
 		elapsed := time.Since(start)
 		klog.V(5).Infof("Middlewares took %s", elapsed)
-
-		message.Body = data.GetBody()
 
 		m.OutputChannel <- message
 	}

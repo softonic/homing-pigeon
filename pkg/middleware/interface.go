@@ -15,7 +15,7 @@ var (
 		"methodConfig": [{
 		  "name": [{"service": "proto.Middleware"}],
 		  "retryPolicy": {
-			  "MaxAttempts": 3,
+			  "MaxAttempts": 5,
 			  "InitialBackoff": "1s",
 			  "MaxBackoff": "9s",
 			  "BackoffMultiplier": 3.0,

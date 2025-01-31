@@ -22,7 +22,7 @@ type UnimplementedMiddleware struct {
 func (b *UnimplementedMiddleware) Next(req *proto.Data) (*proto.Data, error) {
 	if b.client != nil {
 		klog.V(0).Info("processing next middleware")
-		ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), 12*time.Second)
+		ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), 31*time.Second)
 		nextResp, err := (*b.client).Handle(ctxTimeout, req, grpc.WaitForReady(true))
 		cancelTimeout()
 		if err != nil {

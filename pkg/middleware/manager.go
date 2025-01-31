@@ -50,7 +50,7 @@ func (m *MiddlwareManager) Start() {
 
 		// wait for ready up to 12 seconds (including retries)
 		// to handle service discontinuity (external middlewares) or startup order
-		ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), 12*time.Second)
+		ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), 31*time.Second)
 		handleData, err := client.Handle(ctxTimeout, &proto.Data{
 			Body: message.Body,
 		}, grpc.WaitForReady(true))

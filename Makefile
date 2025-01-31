@@ -14,7 +14,15 @@ build: dep generate-proto
 stress-build: dep generate-proto
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/stress-pigeon pkg/stress/main.go
 docker-build:
-	docker build -t softonic/homing-pigeon:${TAG} .
+	docker buildx create --name hp-image-builder --driver docker-container --bootstrap 2> /dev/null || true
+	docker buildx use hp-image-builder
+	docker buildx build \
+		--pull \
+		--push \
+		-f ./Dockerfile \
+		. \
+		--platform linux/arm64,linux/amd64 \
+		-t softonic/homing-pigeon:${TAG}
 mock:
 	mockery --name=WriteAdapter -r
 	mockery --name=Channel -r

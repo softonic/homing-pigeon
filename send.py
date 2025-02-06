@@ -1,3 +1,5 @@
+import string
+import random
 import pika
 import sys
 import time
@@ -8,8 +10,8 @@ RABBITMQ_USER = 'guest'
 RABBITMQ_PASSWORD = 'guest'
 EXCHANGE_NAME = 'homing-pigeon'
 ROUTING_KEY = ''  # Leave empty or set appropriately
-MESSAGE_COUNT = 100000  # Number of messages to send
-MESSAGE_BODY = '{"meta": { "index" : { "_index" : "test", "_id" : "1" } },"data": { "field1" : "value1" }}'
+MESSAGE_COUNT = 10  # Number of messages to send
+MESSAGE_BODY = '{"meta": { "index" : { "_index" : "test", "_id" :"$$ID_PLACE_HOLDER" } },"data": { "field1" : "value1" }}'
 
 def send_messages():
     try:
@@ -24,13 +26,14 @@ def send_messages():
 
         for i in range(1, MESSAGE_COUNT + 1):
             # Publish message
+            messageId = ''.join(random.choices(string.ascii_letters + string.digits, k=30))
             channel.basic_publish(
                 exchange=EXCHANGE_NAME,
                 routing_key=ROUTING_KEY,
-                body=MESSAGE_BODY,
+                body=MESSAGE_BODY.replace("$$ID_PLACE_HOLDER", messageId),
                 properties=pika.BasicProperties(delivery_mode=2),  # Make messages persistent
             )
-            
+
             # Print progress every 10,000 messages
             if i % 10000 == 0:
                 print(f"Sent {i} messages...")

@@ -23,30 +23,35 @@ services:
       ACK_BUFFER_LENGTH: "500"
       GRPC_GO_LOG_VERBOSITY_LEVEL: 99
       GRPC_GO_LOG_SEVERITY_LEVEL: info
-      REQUEST_MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hprq"
-      RESPONSE_MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/hprp"
+      REQUEST_MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/req1"
+      RESPONSE_MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/res1"
       READ_ADAPTER: "AMQP"
       WRITE_ADAPTER: "ELASTIC"
+    command: ["-stderrthreshold=INFO"]
     depends_on:
       rabbit-mq:
         condition: service_healthy
   request-middleware-pass:
-    platform: linux/amd64
     volumes:
       - shared_socket:/tmp
-    image: softonic/hp-throttling:0.1.0
+    image: softonic/hp-pass-middleware:dev
     environment:
-      IN_SOCKET: "/tmp/hprq"
-      THROTTLE_LIMIT: "10"
-      THROTTLE_BURST: "10"
+      IN_SOCKET: "/tmp/req1"
     command: ["-stderrthreshold=INFO"]
-  reponse-middleware-pass:
-    platform: linux/amd64
+  response-middleware-pass:
     volumes:
       - shared_socket:/tmp
-    image: softonic/hp-pass-middleware:0.1.0
+    image: softonic/hp-pass-middleware:dev
     environment:
-      IN_SOCKET: "/tmp/hprp"
+      IN_SOCKET: "/tmp/res1"
+      OUT_SOCKET: "passthrough:///unix:///tmp/res2"
+    command: ["-stderrthreshold=INFO"]
+  response-middleware-pass-2:
+    volumes:
+      - shared_socket:/tmp
+    image: softonic/hp-pass-middleware:dev
+    environment:
+      IN_SOCKET: "/tmp/res2"
     command: ["-stderrthreshold=INFO"]
   rabbit-mq:
     image: rabbitmq:3.8-management

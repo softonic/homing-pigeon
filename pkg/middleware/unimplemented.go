@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 
 	. "github.com/softonic/homing-pigeon/pkg/helpers"
@@ -64,6 +65,11 @@ func (b *UnimplementedMiddleware) getInputSocket() string {
 		err := os.Remove(socket)
 		if err != nil {
 			klog.Errorf("Failed to remove socket: %v", err)
+		}
+	} else {
+		err = os.MkdirAll(filepath.Dir(socket), 0775)
+		if err != nil {
+			klog.Errorf("Error creating socket directory: %v", err)
 		}
 	}
 	return socket

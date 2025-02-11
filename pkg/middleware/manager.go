@@ -57,6 +57,7 @@ func (m *MiddlwareManager) Start() {
 		cancelTimeout()
 		if err != nil {
 			klog.Errorf("Error calling middleware %v", err)
+			message.Nack()
 		} else {
 			message.Body = handleData.GetBody()
 		}

@@ -28,12 +28,13 @@ func (b *UnimplementedMiddleware) Next(req *proto.Data) (*proto.Data, error) {
 		cancelTimeout()
 		if err != nil {
 			klog.Errorf("Next middleware error %v", err)
+			return nil, err
 		} else {
 			klog.V(0).Info("next middleware processed")
 			return nextResp, nil
 		}
 	}
-	// if there is no next middleware or it fails, return the same request
+	// if there is no next middleware return the same request
 	return req, nil
 }
 

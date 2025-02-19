@@ -7,6 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: softonic/homing-pigeon:dev
+    user: root
     environment:
       ELASTICSEARCH_URL: "http://elasticsearch:9200"
       ELASTICSEARCH_FLUSH_MAX_SIZE: "250"
@@ -35,6 +36,7 @@ services:
     volumes:
       - shared_socket:/tmp
     image: softonic/hp-pass-middleware:dev
+    user: root
     environment:
       IN_SOCKET: "/tmp/req1"
     command: ["-stderrthreshold=INFO"]
@@ -42,6 +44,7 @@ services:
     volumes:
       - shared_socket:/tmp
     image: softonic/hp-pass-middleware:dev
+    user: root
     environment:
       IN_SOCKET: "/tmp/res1"
       OUT_SOCKET: "passthrough:///unix:///tmp/res2"
@@ -50,6 +53,7 @@ services:
     volumes:
       - shared_socket:/tmp
     image: softonic/hp-pass-middleware:dev
+    user: root
     environment:
       IN_SOCKET: "/tmp/res2"
     command: ["-stderrthreshold=INFO"]

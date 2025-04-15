@@ -31,6 +31,9 @@ func (es *Elasticsearch) ProcessMessages(msgs *[]messages.Message) {
 
 	for i := range *msgs {
 		msg := &(*msgs)[i]
+		if msg.IsNacked() {
+			continue
+		}
 		body, err := es.decodeBody(msg.Body)
 		if err != nil {
 			klog.Errorf("Invalid Message: %s", string(msg.Body))

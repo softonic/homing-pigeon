@@ -55,14 +55,7 @@ func (ew *Writer) timeout(ackChannel chan<- messages.Message) {
 func (ew *Writer) trigger(ackChannel chan<- messages.Message) {
 	ew.mutex.Lock()
 
-	// filter out messages explicitly n-acked
-	writeableMessages := make([]messages.Message, 0)
-	for _, msg := range ew.msgs {
-		if !msg.IsNacked() {
-			writeableMessages = append(writeableMessages, msg)
-		}
-	}
-	ew.WriteAdapter.ProcessMessages(&writeableMessages)
+	ew.WriteAdapter.ProcessMessages(&ew.msgs)
 	ew.sendAcks(ew.msgs, ackChannel)
 	ew.msgs = make([]messages.Message, 0)
 

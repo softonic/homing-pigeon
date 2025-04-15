@@ -17,6 +17,7 @@ docker-build:
 	docker buildx create --name hp-image-builder --driver docker-container --bootstrap 2> /dev/null || true
 	docker buildx use hp-image-builder
 	docker buildx build \
+		--provenance=true --sbom=true \
 		--pull \
 		--push \
 		-f ./Dockerfile \

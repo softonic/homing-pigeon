@@ -192,13 +192,19 @@ func NewAMQPAdapter() (ReadAdapter, error) {
 		)
 		failOnError(err, "Failed to bind outer exchange")
 	}
+
+	queueArgs := make(amqp.Table)
+	queueArgs["x-dead-letter-exchange"] = config.DeadLettersExchangeName
+	if config.QueueMaxPriority > 0 {
+		queueArgs["x-max-priority"] = config.QueueMaxPriority
+	}
 	q, err := ch.QueueDeclare(
 		config.QueueName,
 		false,
 		false,
 		false,
 		false,
-		amqp.Table{"x-dead-letter-exchange": config.DeadLettersExchangeName},
+		queueArgs,
 	)
 	failOnError(err, "Failed to declare queue")
 
@@ -272,6 +278,15 @@ func NewAmqpConfig() (amqpAdapter.Config, error) {
 		qosPrefetchCount = 0
 	}
 
+	QueueMaxPriority, err := strconv.Atoi(os.Getenv("RABBITMQ_QUEUE_MAX_PRIORITY"))
+	if err != nil {
+		QueueMaxPriority = 0
+	}
+	if QueueMaxPriority > 255 {
+		klog.Warningf("RABBITMQ_QUEUE_MAX_PRIORITY is set to %d, but the maximum value is 255. Setting it to 255.", QueueMaxPriority)
+		QueueMaxPriority = 255
+	}
+
 	consumerName := os.Getenv("RABBITMQ_CONSUMER_NAME")
 	if consumerName == "" {
 		consumerName, _ = os.Hostname()
@@ -289,6 +304,7 @@ func NewAmqpConfig() (amqpAdapter.Config, error) {
 		QueueName:               queueName,
 		QueueBindingKey:         helpers.GetEnv("RABBITMQ_QUEUE_BINDING_KEY", "#"),
 		QosPrefetchCount:        qosPrefetchCount,
+		QueueMaxPriority:        QueueMaxPriority,
 		ConsumerName:            consumerName,
 	}, nil
 }

@@ -6,6 +6,7 @@ type Config struct {
 	DeadLettersQueueName    string
 	ExchangeName            string
 	QueueName               string
+	QueueMaxPriority        int
 	QosPrefetchCount        int
 	ConsumerName            string
 	ExchangeType            string

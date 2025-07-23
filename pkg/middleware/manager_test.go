@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net"
 	"os"
 	"testing"
@@ -38,9 +39,7 @@ func setupTestGRPCServer(mockServer *MockMiddlewareServer) (*grpc.Server, *bufco
 	s := grpc.NewServer()
 	proto.RegisterMiddlewareServer(s, mockServer)
 	go func() {
-		if err := s.Serve(lis); err != nil {
-			// Server stopped
-		}
+		_ = s.Serve(lis) // Server will stop when the listener is closed
 	}()
 	return s, lis
 }
@@ -108,15 +107,15 @@ func TestMiddlewareManager_Start_WithMiddleware_Integration(t *testing.T) {
 	mockServer := &MockMiddlewareServer{
 		HandleFunc: func(ctx context.Context, req *proto.Data) (*proto.Data, error) {
 			// Modify messages and set Acked=true to indicate successful processing
-			messages := make([]*proto.Data_Message, len(req.Messages))
+			responseMessages := make([]*proto.Data_Message, len(req.Messages))
 			for i, msg := range req.Messages {
-				messages[i] = &proto.Data_Message{
+				responseMessages[i] = &proto.Data_Message{
 					Id:    msg.Id,
 					Body:  append(msg.Body, []byte("-processed")...),
 					Acked: true, // Middleware indicates successful processing
 				}
 			}
-			return &proto.Data{Messages: messages}, nil
+			return &proto.Data{Messages: responseMessages}, nil
 		},
 	}
 
@@ -137,9 +136,7 @@ func TestMiddlewareManager_Start_WithMiddleware_Integration(t *testing.T) {
 
 	// Start server in background
 	go func() {
-		if err := s.Serve(lis); err != nil {
-			// Server stopped
-		}
+		_ = s.Serve(lis) // Server will stop when the listener is closed
 	}()
 	defer s.Stop()
 
@@ -316,15 +313,15 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 	t.Run("SuccessfulProcessing", func(t *testing.T) {
 		// Setup mock to return processed messages
 		mockServer.HandleFunc = func(ctx context.Context, req *proto.Data) (*proto.Data, error) {
-			messages := make([]*proto.Data_Message, len(req.Messages))
+			responseMessages := make([]*proto.Data_Message, len(req.Messages))
 			for i, msg := range req.Messages {
-				messages[i] = &proto.Data_Message{
+				responseMessages[i] = &proto.Data_Message{
 					Id:    msg.Id,
 					Body:  append(msg.Body, []byte("-processed")...),
 					Acked: true, // Middleware indicates successful processing
 				}
 			}
-			return &proto.Data{Messages: messages}, nil
+			return &proto.Data{Messages: responseMessages}, nil
 		}
 
 		// Create test messages
@@ -373,15 +370,15 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 	t.Run("MiddlewareNacksMessage", func(t *testing.T) {
 		// Setup mock to nack specific messages
 		mockServer.HandleFunc = func(ctx context.Context, req *proto.Data) (*proto.Data, error) {
-			messages := make([]*proto.Data_Message, len(req.Messages))
+			responseMessages := make([]*proto.Data_Message, len(req.Messages))
 			for i, msg := range req.Messages {
-				messages[i] = &proto.Data_Message{
+				responseMessages[i] = &proto.Data_Message{
 					Id:    msg.Id,
 					Body:  msg.Body,
 					Acked: false, // Middleware nacks this message
 				}
 			}
-			return &proto.Data{Messages: messages}, nil
+			return &proto.Data{Messages: responseMessages}, nil
 		}
 
 		// Create test message
@@ -406,7 +403,7 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 	t.Run("MiddlewareCallFails", func(t *testing.T) {
 		// Setup mock to return an error
 		mockServer.HandleFunc = func(ctx context.Context, req *proto.Data) (*proto.Data, error) {
-			return nil, assert.AnError // Simulate middleware failure
+			return nil, errors.New("middleware processing failed") // Simulate middleware failure
 		}
 
 		// Create test messages
@@ -445,7 +442,7 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 		// Setup mock to return wrong number of messages
 		mockServer.HandleFunc = func(ctx context.Context, req *proto.Data) (*proto.Data, error) {
 			// Return fewer messages than sent (should cause length mismatch error)
-			messages := []*proto.Data_Message{
+			responseMessages := []*proto.Data_Message{
 				{
 					Id:    req.Messages[0].Id,
 					Body:  req.Messages[0].Body,
@@ -453,7 +450,7 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 				},
 				// Missing second message - this creates a length mismatch
 			}
-			return &proto.Data{Messages: messages}, nil
+			return &proto.Data{Messages: responseMessages}, nil
 		}
 
 		// Create test messages
@@ -491,15 +488,15 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 	t.Run("MiddlewareResponseIdMismatch", func(t *testing.T) {
 		// Setup mock to return messages with wrong IDs
 		mockServer.HandleFunc = func(ctx context.Context, req *proto.Data) (*proto.Data, error) {
-			messages := make([]*proto.Data_Message, len(req.Messages))
+			responseMessages := make([]*proto.Data_Message, len(req.Messages))
 			for i, msg := range req.Messages {
-				messages[i] = &proto.Data_Message{
+				responseMessages[i] = &proto.Data_Message{
 					Id:    msg.Id + 100, // Wrong ID - should cause mismatch error
 					Body:  msg.Body,
 					Acked: true,
 				}
 			}
-			return &proto.Data{Messages: messages}, nil
+			return &proto.Data{Messages: responseMessages}, nil
 		}
 
 		// Create test message

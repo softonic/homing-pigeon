@@ -55,14 +55,14 @@ func (a *Amqp) processMessages(writeChannel chan<- messages.Message) {
 func (a *Amqp) HandleAck(ackChannel <-chan messages.Message) {
 	for ack := range ackChannel {
 		if ack.IsAcked() {
-			err := a.Ch.Ack(ack.Id.(uint64), false)
+			err := a.Ch.Ack(ack.Id, false)
 			if err != nil {
 				klog.Error(err)
 			}
 			continue
 		}
 
-		err := a.Ch.Nack(ack.Id.(uint64), false, false)
+		err := a.Ch.Nack(ack.Id, false, false)
 		if err != nil {
 			klog.Error(err)
 		}

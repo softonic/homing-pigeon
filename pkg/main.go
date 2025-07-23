@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"strconv"
+	"time"
 
 	// Third-party packages, with a blank line separator
 	_ "go.uber.org/automaxprocs"
@@ -36,16 +37,23 @@ func main() {
 		panic(err)
 	}
 
+	batchSize := helpers.GetIntEnv("MIDDLEWARE_BATCH_SIZE", 50)
+	batchTimeout := time.Duration(helpers.GetIntEnv("MIDDLEWARE_BATCH_TIMEOUT_MS", 100)) * time.Millisecond
+
 	requestMiddleware := middleware.NewMiddlewareManager(
 		msgChBeforeMiddleware,
 		msgChAfterMiddleware,
 		helpers.GetEnv("REQUEST_MIDDLEWARES_SOCKET", ""),
+		batchSize,
+		batchTimeout,
 	)
 
 	responseMiddleware := middleware.NewMiddlewareManager(
 		ackChBeforeMiddleware,
 		ackChAfterMiddleware,
 		helpers.GetEnv("RESPONSE_MIDDLEWARES_SOCKET", ""),
+		batchSize,
+		batchTimeout,
 	)
 
 	go reader.Start()

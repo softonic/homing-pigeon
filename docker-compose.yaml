@@ -27,6 +27,8 @@ services:
       GRPC_GO_LOG_SEVERITY_LEVEL: info
       REQUEST_MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/req1"
       RESPONSE_MIDDLEWARES_SOCKET: "passthrough:///unix:///tmp/res1"
+      MIDDLEWARE_BATCH_SIZE: 10
+      MIDDLEWARE_BATCH_TIMEOUT_MS: 1000
       READ_ADAPTER: "AMQP"
       WRITE_ADAPTER: "ELASTIC"
     command: ["-stderrthreshold=INFO"]

@@ -79,8 +79,8 @@ In order to start up correctly, it needs well defined environment variables:
 | RESPONSE_MIDDLEWARES_SOCKET   | Socket to connect to middlewares between writer and reader. Ex: passthrough:///unix://tmp/test.sock" |
 | READ_ADAPTER                  | Read interface implementation. Default: AMQP                                                         |
 | WRITE_ADAPTER                 | Write interface implementation. Default: ELASTIC                                                     |
-| MIDDLEWARE_BATCH_SIZE         | Number of messages to send in batch to the middleware                                                |
-| MIDDLEWARE_BATCH_TIMEOUT_MS   | Max time to wait until getting a full size batch in milliseconds                                     |
+| MIDDLEWARE_BATCH_SIZE         | Number of messages to send in batch to the middleware (Defaults to 50).                              |
+| MIDDLEWARE_BATCH_TIMEOUT_MS   | Max time to wait until getting a full size batch in milliseconds (Defaults to 100ms).                |
 
 ##### Read Adapters
 

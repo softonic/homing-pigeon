@@ -98,8 +98,10 @@ func (m *MiddlwareManager) processMessageBatch(msgBatch []messages.Message, clie
 	protoMsgsRequest := make([]*proto.Data_Message, len(msgBatch))
 	for i, msg := range msgBatch {
 		protoMsgsRequest[i] = &proto.Data_Message{
-			Id:   msg.Id,
-			Body: msg.Body,
+			Id:     msg.Id,
+			Body:   msg.Body,
+			Acked:  msg.IsAcked(),
+			Nacked: msg.IsNacked(),
 		}
 	}
 	// send messages with wait for the middleware to be ready
@@ -130,7 +132,7 @@ func (m *MiddlwareManager) processMessageBatch(msgBatch []messages.Message, clie
 	for i, msg := range msgBatch {
 		if msg.Id == protoMsgsResponse[i].GetId() {
 			msg.Body = protoMsgsResponse[i].GetBody()
-			if !protoMsgsResponse[i].GetAcked() {
+			if protoMsgsResponse[i].GetNacked() {
 				msg.Nack()
 			}
 		} else {

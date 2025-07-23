@@ -27,9 +27,18 @@ func (m *MockMiddlewareServer) Handle(ctx context.Context, req *proto.Data) (*pr
 	if m.HandleFunc != nil {
 		return m.HandleFunc(ctx, req)
 	}
-	// Default behavior: echo back the same messages with acked=true
+	// Default behavior: echo back the same messages without acking (only writer acks)
+	responseMessages := make([]*proto.Data_Message, len(req.Messages))
+	for i, msg := range req.Messages {
+		responseMessages[i] = &proto.Data_Message{
+			Id:     msg.Id,
+			Body:   msg.Body,
+			Acked:  false, // Middleware never acks - only writer does that
+			Nacked: false, // Not nacked by default
+		}
+	}
 	return &proto.Data{
-		Messages: req.Messages,
+		Messages: responseMessages,
 	}, nil
 }
 
@@ -106,13 +115,14 @@ func TestMiddlewareManager_Start_WithMiddleware_Integration(t *testing.T) {
 	// Setup mock gRPC server with Unix domain socket
 	mockServer := &MockMiddlewareServer{
 		HandleFunc: func(ctx context.Context, req *proto.Data) (*proto.Data, error) {
-			// Modify messages and set Acked=true to indicate successful processing
+			// Modify messages but don't ack them - that's the writer's job
 			responseMessages := make([]*proto.Data_Message, len(req.Messages))
 			for i, msg := range req.Messages {
 				responseMessages[i] = &proto.Data_Message{
-					Id:    msg.Id,
-					Body:  append(msg.Body, []byte("-processed")...),
-					Acked: true, // Middleware indicates successful processing
+					Id:     msg.Id,
+					Body:   append(msg.Body, []byte("-processed")...),
+					Acked:  false, // Middleware never acks - only writer does that
+					Nacked: false, // Not nacked - processing was successful
 				}
 			}
 			return &proto.Data{Messages: responseMessages}, nil
@@ -316,9 +326,10 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 			responseMessages := make([]*proto.Data_Message, len(req.Messages))
 			for i, msg := range req.Messages {
 				responseMessages[i] = &proto.Data_Message{
-					Id:    msg.Id,
-					Body:  append(msg.Body, []byte("-processed")...),
-					Acked: true, // Middleware indicates successful processing
+					Id:     msg.Id,
+					Body:   append(msg.Body, []byte("-processed")...),
+					Acked:  false, // Middleware never acks - only writer does that
+					Nacked: false, // Not nacked - processing was successful
 				}
 			}
 			return &proto.Data{Messages: responseMessages}, nil
@@ -373,9 +384,10 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 			responseMessages := make([]*proto.Data_Message, len(req.Messages))
 			for i, msg := range req.Messages {
 				responseMessages[i] = &proto.Data_Message{
-					Id:    msg.Id,
-					Body:  msg.Body,
-					Acked: false, // Middleware nacks this message
+					Id:     msg.Id,
+					Body:   msg.Body,
+					Acked:  false, // Middleware never acks - only writer does that
+					Nacked: true,  // Middleware explicitly nacks this message
 				}
 			}
 			return &proto.Data{Messages: responseMessages}, nil
@@ -444,9 +456,10 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 			// Return fewer messages than sent (should cause length mismatch error)
 			responseMessages := []*proto.Data_Message{
 				{
-					Id:    req.Messages[0].Id,
-					Body:  req.Messages[0].Body,
-					Acked: true,
+					Id:     req.Messages[0].Id,
+					Body:   req.Messages[0].Body,
+					Acked:  false, // Middleware never acks
+					Nacked: false,
 				},
 				// Missing second message - this creates a length mismatch
 			}
@@ -491,9 +504,10 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 			responseMessages := make([]*proto.Data_Message, len(req.Messages))
 			for i, msg := range req.Messages {
 				responseMessages[i] = &proto.Data_Message{
-					Id:    msg.Id + 100, // Wrong ID - should cause mismatch error
-					Body:  msg.Body,
-					Acked: true,
+					Id:     msg.Id + 100, // Wrong ID - should cause mismatch error
+					Body:   msg.Body,
+					Acked:  false, // Middleware never acks
+					Nacked: false,
 				}
 			}
 			return &proto.Data{Messages: responseMessages}, nil
@@ -516,6 +530,106 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 		assert.Equal(t, []byte("test1"), outputMessage.Body)
 		assert.True(t, outputMessage.IsNacked()) // Should be nacked due to ID mismatch
 		assert.False(t, outputMessage.IsAcked())
+	})
+
+	t.Run("MessageStatePreservation", func(t *testing.T) {
+		// Setup mock to verify that message state (acked/nacked) is properly sent to middleware
+		var receivedMessages []*proto.Data_Message
+		mockServer.HandleFunc = func(ctx context.Context, req *proto.Data) (*proto.Data, error) {
+			// Capture the received messages for verification
+			receivedMessages = req.Messages
+
+			// Echo back the same messages without acking them
+			responseMessages := make([]*proto.Data_Message, len(req.Messages))
+			for i, msg := range req.Messages {
+				responseMessages[i] = &proto.Data_Message{
+					Id:     msg.Id,
+					Body:   msg.Body,
+					Acked:  false, // Middleware never acks - only writer does that
+					Nacked: false, // Not nacking these messages
+				}
+			}
+			return &proto.Data{Messages: responseMessages}, nil
+		}
+
+		// Create test messages with different states
+		testMessage1 := messages.Message{Id: 1, Body: []byte("test1")}
+		testMessage1.Ack() // This message is pre-acked
+
+		testMessage2 := messages.Message{Id: 2, Body: []byte("test2")}
+		testMessage2.Nack() // This message is pre-nacked
+
+		testMessage3 := messages.Message{Id: 3, Body: []byte("test3")}
+		// This message has no ack/nack state
+
+		testMessages := []messages.Message{testMessage1, testMessage2, testMessage3}
+
+		// Process batch
+		manager.processMessageBatch(testMessages, client)
+
+		// Consume the output messages to clear the channel
+		for i := 0; i < len(testMessages); i++ {
+			select {
+			case <-outputChan:
+			case <-time.After(time.Second):
+				t.Fatal("Timeout waiting for output message")
+			}
+		}
+
+		// Verify the middleware received the correct state information
+		require.Len(t, receivedMessages, 3)
+
+		// First message should show as acked
+		assert.Equal(t, uint64(1), receivedMessages[0].Id)
+		assert.True(t, receivedMessages[0].Acked)
+		assert.False(t, receivedMessages[0].Nacked)
+
+		// Second message should show as nacked
+		assert.Equal(t, uint64(2), receivedMessages[1].Id)
+		assert.False(t, receivedMessages[1].Acked)
+		assert.True(t, receivedMessages[1].Nacked)
+
+		// Third message should show as neither acked nor nacked
+		assert.Equal(t, uint64(3), receivedMessages[2].Id)
+		assert.False(t, receivedMessages[2].Acked)
+		assert.False(t, receivedMessages[2].Nacked)
+	})
+
+	t.Run("MiddlewareCannotAckMessages", func(t *testing.T) {
+		// This test verifies that even if middleware tries to ack messages,
+		// the manager ignores it since only the writer should ack
+		mockServer.HandleFunc = func(ctx context.Context, req *proto.Data) (*proto.Data, error) {
+			responseMessages := make([]*proto.Data_Message, len(req.Messages))
+			for i, msg := range req.Messages {
+				responseMessages[i] = &proto.Data_Message{
+					Id:     msg.Id,
+					Body:   msg.Body,
+					Acked:  true, // Middleware incorrectly tries to ack (should be ignored)
+					Nacked: false,
+				}
+			}
+			return &proto.Data{Messages: responseMessages}, nil
+		}
+
+		// Create test message
+		testMessage := messages.Message{Id: 1, Body: []byte("test1")}
+
+		// Process batch
+		manager.processMessageBatch([]messages.Message{testMessage}, client)
+
+		// Check output
+		var outputMessage messages.Message
+		select {
+		case outputMessage = <-outputChan:
+		case <-time.After(time.Second):
+			t.Fatal("Timeout waiting for output message")
+		}
+
+		// Message should NOT be acked even though middleware returned acked=true
+		// Only the writer should ack messages
+		assert.False(t, outputMessage.IsAcked())  // Should remain unacked
+		assert.False(t, outputMessage.IsNacked()) // Should not be nacked either
+		assert.Equal(t, []byte("test1"), outputMessage.Body)
 	})
 }
 

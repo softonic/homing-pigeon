@@ -20,6 +20,7 @@ message Data {
     uint64 Id = 1;
     bytes Body = 2;
     bool acked = 3;
+    bool nacked = 4;
   }
   repeated Message messages = 1;
 }

@@ -17,7 +17,7 @@ services:
       RABBITMQ_DLX_QUEUE_NAME: "dead-letters"
       RABBITMQ_EXCHANGE_NAME: "homing-pigeon"
       RABBITMQ_EXCHANGE_TYPE: "fanout"
-      RABBITMQ_QUEUE_NAME: "messages"
+      RABBITMQ_QUEUE_NAME: incoming-local-{{ .ConsumerId }}
       RABBITMQ_QUEUE_BINDING_KEY: "#"
       RABBITMQ_QOS_PREFETCH_COUNT: "1000"
       RABBITMQ_QUEUE_MAX_PRIORITY: "2"

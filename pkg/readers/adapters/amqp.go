@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"html/template"
 	"os"
 	"strconv"
@@ -241,18 +242,29 @@ func NewAMQPAdapter() (ReadAdapter, error) {
 	}, nil
 }
 
-func NewAmqpConfig() (amqpAdapter.Config, error) {
-	// @TODO this needs to be extracted to its own method
+func generateConsumerID() (string, error) {
 	consumerId := os.Getenv("CONSUMER_ID")
 	if consumerId == "" {
 		// Work out consumer ID based on hostname: useful for k8s resources (pods controlled by deployment, statefulset)
 		hostname, err := os.Hostname()
 		if err != nil {
-			klog.Errorf("Could not set ConsumerID: %v", err)
+			return "", fmt.Errorf("could not get hostname for ConsumerID: %w", err)
 		}
 		pos := strings.LastIndex(hostname, "-")
 		consumerId = hostname[pos+1:]
+		if consumerId == "" {
+			return "", fmt.Errorf("could not extract consumer ID from hostname: %s", hostname)
+		}
 	}
+
+	return consumerId, nil
+}
+func NewAmqpConfig() (amqpAdapter.Config, error) {
+	consumerId, err := generateConsumerID()
+	if err != nil {
+		return amqpAdapter.Config{}, fmt.Errorf("could not generate ConsumerID: %w", err)
+	}
+	klog.Infof("Generated consumer ID: %s", consumerId)
 
 	// @TODO This needs to be extracted to its own object
 	data := struct {
@@ -262,7 +274,7 @@ func NewAmqpConfig() (amqpAdapter.Config, error) {
 	}
 
 	tpl := template.New("queueName")
-	tpl, err := tpl.Parse(helpers.GetEnv("RABBITMQ_QUEUE_NAME", ""))
+	tpl, err = tpl.Parse(helpers.GetEnv("RABBITMQ_QUEUE_NAME", ""))
 	if err != nil {
 		klog.Errorf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
 	}

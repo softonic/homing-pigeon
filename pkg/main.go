@@ -20,14 +20,15 @@ import (
 )
 
 func main() {
-
+	// Setup graceful shutdown context
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Handle shutdown signals (SIGTERM from Kubernetes, SIGINT from Ctrl+C)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		<-c
-		cancel()
+		<-c      // Wait for shutdown signal
+		cancel() // Trigger graceful shutdown
 	}()
 
 	klog.InitFlags(nil)

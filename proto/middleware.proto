@@ -16,5 +16,11 @@ service Middleware {
 
 // Data is represented with an unique ID and the body that contains the actual data.
 message Data {
-    bytes Body = 1;
+  message Message {
+    uint64 Id = 1;
+    bytes Body = 2;
+    bool acked = 3;
+    bool nacked = 4;
+  }
+  repeated Message messages = 1;
 }

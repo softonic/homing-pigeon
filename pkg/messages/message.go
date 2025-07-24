@@ -1,7 +1,7 @@
 package messages
 
 type Message struct {
-	Id    interface{}
+	Id    uint64
 	Body  []byte
 	acked *bool
 }

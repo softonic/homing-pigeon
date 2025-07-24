@@ -1,11 +1,9 @@
 package adapters
 
 import (
-	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"html/template"
 	"os"
 	"strconv"
 	"strings"
@@ -266,24 +264,11 @@ func NewAmqpConfig() (amqpAdapter.Config, error) {
 	}
 	klog.Infof("Generated consumer ID: %s", consumerId)
 
-	// @TODO This needs to be extracted to its own object
-	data := struct {
-		ConsumerId string
-	}{
+	queueName := strings.ReplaceAll(
+		helpers.GetEnv("RABBITMQ_QUEUE_NAME", ""),
+		"{{ .ConsumerId }}",
 		consumerId,
-	}
-
-	tpl := template.New("queueName")
-	tpl, err = tpl.Parse(helpers.GetEnv("RABBITMQ_QUEUE_NAME", ""))
-	if err != nil {
-		klog.Errorf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
-	}
-	var buf bytes.Buffer
-	err = tpl.Execute(&buf, data)
-	if err != nil {
-		klog.Errorf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
-	}
-	queueName := buf.String()
+	)
 
 	qosPrefetchCount, err := strconv.Atoi(os.Getenv("RABBITMQ_QOS_PREFETCH_COUNT"))
 	if err != nil {

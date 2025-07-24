@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -11,10 +12,8 @@ import (
 func TestProduceMessageQuantity(t *testing.T) {
 	expectedMessages := 100
 	msgChannel := make(chan messages.Message, expectedMessages+1)
-
 	obj := new(Dummy)
-	obj.Listen(msgChannel)
-
+	obj.Listen(context.Background(), msgChannel)
 	assert.Len(t, msgChannel, expectedMessages)
 }
 

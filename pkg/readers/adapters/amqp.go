@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -22,19 +23,29 @@ type Amqp struct {
 	Notify           chan *amqp.Error
 }
 
-// @TODO detected race condition with closed channel
-func (a *Amqp) Listen(msgChannel chan<- messages.Message) {
+func (a *Amqp) Listen(ctx context.Context, msgChannel chan<- messages.Message) {
 	defer a.Conn.Close()
 	defer a.Ch.Close()
 
-	go a.processMessages(msgChannel)
-	klog.V(0).Infof(" [*] Waiting for messages. To exit press CTRL+C")
-	select {}
+	done := make(chan struct{})
+	go func() {
+		a.processMessages(ctx, msgChannel) // Pass context
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done(): // Graceful shutdown requested
+		<-done // Wait for processMessages to finish
+	case <-done: // processMessages finished naturally
+	}
 }
 
-func (a *Amqp) processMessages(writeChannel chan<- messages.Message) {
+func (a *Amqp) processMessages(ctx context.Context, writeChannel chan<- messages.Message) {
 	for {
 		select {
+		case <-ctx.Done():
+			klog.V(4).Infoln("Context cancelled, stopping message processing.")
+			return
 		case err := <-a.Notify:
 			if err != nil {
 				klog.Fatalf("Error in connection: %s", err)

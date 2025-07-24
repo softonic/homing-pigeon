@@ -1,6 +1,7 @@
 package readers
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -13,8 +14,8 @@ type readAdapterMock struct {
 	wg sync.WaitGroup
 }
 
-func (r *readAdapterMock) Listen(msgChannel chan<- messages.Message) {
-	r.Called(msgChannel)
+func (r *readAdapterMock) Listen(ctx context.Context, msgChannel chan<- messages.Message) {
+	r.Called(ctx, msgChannel)
 }
 func (r *readAdapterMock) HandleAck(ackChannel <-chan messages.Message) {
 	r.Called(ackChannel)
@@ -27,7 +28,7 @@ func TestAdapterIsStarted(t *testing.T) {
 	ackChannel := make(<-chan messages.Message)
 	readAdapterMock.wg.Add(1)
 
-	readAdapterMock.On("Listen", msgChannel)
+	readAdapterMock.On("Listen", mock.Anything, msgChannel)
 	readAdapterMock.On("HandleAck", ackChannel)
 
 	reader := Reader{
@@ -35,7 +36,7 @@ func TestAdapterIsStarted(t *testing.T) {
 		MsgChannel:  msgChannel,
 		AckChannel:  ackChannel,
 	}
-	reader.Start()
+	reader.Start(context.Background())
 	readAdapterMock.wg.Wait()
 
 	readAdapterMock.AssertExpectations(t)

@@ -1,6 +1,8 @@
 package readers
 
 import (
+	"context"
+
 	"github.com/softonic/homing-pigeon/pkg/helpers"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/softonic/homing-pigeon/pkg/readers/adapters"
@@ -15,9 +17,9 @@ type Reader struct {
 }
 
 // Start starts the reader.
-func (r *Reader) Start() {
+func (r *Reader) Start(ctx context.Context) {
 	go r.ReadAdapter.HandleAck(r.AckChannel)
-	r.ReadAdapter.Listen(r.MsgChannel)
+	r.ReadAdapter.Listen(ctx, r.MsgChannel)
 }
 
 // NewReader creates a new Reader instance.

@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -25,8 +26,7 @@ func TestProcessMessage(t *testing.T) {
 		DeliveryTag: 42,
 		Body:        []byte("Hello!"),
 	}
-
-	go obj.Listen(msgChannel)
+	go obj.Listen(context.Background(), msgChannel)
 
 	assert.Eventually(
 		t,

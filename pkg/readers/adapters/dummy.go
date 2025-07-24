@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -9,7 +10,7 @@ import (
 
 type Dummy struct{}
 
-func (d *Dummy) Listen(msgChannel chan<- messages.Message) {
+func (d *Dummy) Listen(ctx context.Context, msgChannel chan<- messages.Message) {
 	for i := 0; i < 100; i++ {
 		msg := messages.Message{
 			Id:   uint64(i),

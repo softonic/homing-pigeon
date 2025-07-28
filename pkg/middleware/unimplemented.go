@@ -49,7 +49,11 @@ func (b *UnimplementedMiddleware) Listen(middleware proto.MiddlewareServer) {
 
 	b.client = client
 
-	grpcServer := grpc.NewServer(grpc.MaxConcurrentStreams(10))
+	grpcServer := grpc.NewServer(
+		grpc.MaxConcurrentStreams(10),
+		grpc.MaxRecvMsgSize(defaultMaxMessageSize),
+		grpc.MaxSendMsgSize(defaultMaxMessageSize),
+	)
 	proto.RegisterMiddlewareServer(grpcServer, middleware)
 
 	klog.V(0).Info("Start listening")

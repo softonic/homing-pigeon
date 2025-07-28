@@ -33,6 +33,7 @@ func (m *MiddlwareManager) Start() {
 
 	var opts []grpc.DialOption
 	opts = append(opts,
+		grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(defaultMaxMessageSize), grpc.MaxCallRecvMsgSize(defaultMaxMessageSize)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultServiceConfig(defaultRetryPolicy))
 

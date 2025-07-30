@@ -1,10 +1,10 @@
 package adapters
 
 import (
-	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"html/template"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -23,19 +23,29 @@ type Amqp struct {
 	Notify           chan *amqp.Error
 }
 
-// @TODO detected race condition with closed channel
-func (a *Amqp) Listen(msgChannel chan<- messages.Message) {
+func (a *Amqp) Listen(ctx context.Context, msgChannel chan<- messages.Message) {
 	defer a.Conn.Close()
 	defer a.Ch.Close()
 
-	go a.processMessages(msgChannel)
-	klog.V(0).Infof(" [*] Waiting for messages. To exit press CTRL+C")
-	select {}
+	done := make(chan struct{})
+	go func() {
+		a.processMessages(ctx, msgChannel) // Pass context
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done(): // Graceful shutdown requested
+		<-done // Wait for processMessages to finish
+	case <-done: // processMessages finished naturally
+	}
 }
 
-func (a *Amqp) processMessages(writeChannel chan<- messages.Message) {
+func (a *Amqp) processMessages(ctx context.Context, writeChannel chan<- messages.Message) {
 	for {
 		select {
+		case <-ctx.Done():
+			klog.V(4).Infoln("Context cancelled, stopping message processing.")
+			return
 		case err := <-a.Notify:
 			if err != nil {
 				klog.Fatalf("Error in connection: %s", err)
@@ -241,37 +251,35 @@ func NewAMQPAdapter() (ReadAdapter, error) {
 	}, nil
 }
 
-func NewAmqpConfig() (amqpAdapter.Config, error) {
-	// @TODO this needs to be extracted to its own method
+func generateConsumerID() (string, error) {
 	consumerId := os.Getenv("CONSUMER_ID")
 	if consumerId == "" {
 		// Work out consumer ID based on hostname: useful for k8s resources (pods controlled by deployment, statefulset)
 		hostname, err := os.Hostname()
 		if err != nil {
-			klog.Errorf("Could not set ConsumerID: %v", err)
+			return "", fmt.Errorf("could not get hostname for ConsumerID: %w", err)
 		}
 		pos := strings.LastIndex(hostname, "-")
 		consumerId = hostname[pos+1:]
+		if consumerId == "" {
+			return "", fmt.Errorf("could not extract consumer ID from hostname: %s", hostname)
+		}
 	}
 
-	// @TODO This needs to be extracted to its own object
-	data := struct {
-		ConsumerId string
-	}{
+	return consumerId, nil
+}
+func NewAmqpConfig() (amqpAdapter.Config, error) {
+	consumerId, err := generateConsumerID()
+	if err != nil {
+		return amqpAdapter.Config{}, fmt.Errorf("could not generate ConsumerID: %w", err)
+	}
+	klog.Infof("Generated consumer ID: %s", consumerId)
+
+	queueName := strings.ReplaceAll(
+		helpers.GetEnv("RABBITMQ_QUEUE_NAME", ""),
+		"{{ .ConsumerId }}",
 		consumerId,
-	}
-
-	tpl := template.New("queueName")
-	tpl, err := tpl.Parse(helpers.GetEnv("RABBITMQ_QUEUE_NAME", ""))
-	if err != nil {
-		klog.Errorf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
-	}
-	var buf bytes.Buffer
-	err = tpl.Execute(&buf, data)
-	if err != nil {
-		klog.Errorf("Invalid RABBITMQ_QUEUE_NAME: %v", err)
-	}
-	queueName := buf.String()
+	)
 
 	qosPrefetchCount, err := strconv.Atoi(os.Getenv("RABBITMQ_QOS_PREFETCH_COUNT"))
 	if err != nil {

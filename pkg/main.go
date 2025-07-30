@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	// Third-party packages, with a blank line separator
@@ -17,6 +20,17 @@ import (
 )
 
 func main() {
+	// Setup graceful shutdown context
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Handle shutdown signals (SIGTERM from Kubernetes, SIGINT from Ctrl+C)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c      // Wait for shutdown signal
+		cancel() // Trigger graceful shutdown
+	}()
+
 	klog.InitFlags(nil)
 
 	bufLen := GetBufferLength("MESSAGE_BUFFER_LENGTH")
@@ -56,7 +70,7 @@ func main() {
 		batchTimeout,
 	)
 
-	go reader.Start()
+	go reader.Start(ctx)
 	go requestMiddleware.Start()
 	go responseMiddleware.Start()
 	writer.Start()

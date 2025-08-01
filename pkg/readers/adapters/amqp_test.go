@@ -98,7 +98,7 @@ func TestHandleNack(t *testing.T) {
 
 	ackChannel <- msg
 
-	go obj.HandleAck(ackChannel)
+	go obj.HandleAck(context.Background(), ackChannel)
 
 	assert.Eventually(
 		t,

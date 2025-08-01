@@ -20,7 +20,7 @@ func (d *Dummy) Listen(ctx context.Context, msgChannel chan<- messages.Message) 
 	}
 }
 
-func (d *Dummy) HandleAck(ackChannel <-chan messages.Message) {
+func (d *Dummy) HandleAck(ctx context.Context, ackChannel <-chan messages.Message) {
 	for ack := range ackChannel {
 		fmt.Print("Acked " + strconv.Itoa(int(ack.Id)) + "\n")
 	}

@@ -64,7 +64,7 @@ func TestHandleAck(t *testing.T) {
 
 	ackChannel <- msg
 
-	go obj.HandleAck(ackChannel)
+	go obj.HandleAck(context.Background(), ackChannel)
 
 	assert.Eventually(
 		t,
@@ -141,7 +141,7 @@ func TestHandleMixedAcks(t *testing.T) {
 	ackChannel <- msgAck
 	ackChannel <- msgNack
 
-	go obj.HandleAck(ackChannel)
+	go obj.HandleAck(context.Background(), ackChannel)
 
 	assert.Eventually(
 		t,

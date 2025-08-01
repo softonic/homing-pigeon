@@ -29,7 +29,7 @@ func TestAcksAreRead(t *testing.T) {
 	ackChannel <- msg
 
 	obj := new(Dummy)
-	go obj.HandleAck(ackChannel)
+	go obj.HandleAck(context.Background(), ackChannel)
 
 	assert.Eventually(t, func() bool {
 		return assert.Empty(t, ackChannel)

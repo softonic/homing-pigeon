@@ -17,7 +17,7 @@ type readAdapterMock struct {
 func (r *readAdapterMock) Listen(ctx context.Context, msgChannel chan<- messages.Message) {
 	r.Called(ctx, msgChannel)
 }
-func (r *readAdapterMock) HandleAck(ackChannel <-chan messages.Message) {
+func (r *readAdapterMock) HandleAck(ctx context.Context, ackChannel <-chan messages.Message) {
 	r.Called(ackChannel)
 	r.wg.Done()
 }

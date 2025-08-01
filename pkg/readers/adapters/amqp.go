@@ -62,19 +62,28 @@ func (a *Amqp) processMessages(ctx context.Context, writeChannel chan<- messages
 	}
 }
 
-func (a *Amqp) HandleAck(ackChannel <-chan messages.Message) {
-	for ack := range ackChannel {
-		if ack.IsAcked() {
-			err := a.Ch.Ack(ack.Id, false)
+func (a *Amqp) HandleAck(ctx context.Context, ackChannel <-chan messages.Message) {
+
+	for {
+		select {
+		case <-ctx.Done():
+			return // ✅ Valid - exits HandleAck method
+		case ack, ok := <-ackChannel:
+			if !ok {
+				return // ✅ Valid - exits HandleAck method
+			}
+			if ack.IsAcked() {
+				err := a.Ch.Ack(ack.Id, false)
+				if err != nil {
+					klog.Error(err)
+				}
+				continue
+			}
+
+			err := a.Ch.Nack(ack.Id, false, false)
 			if err != nil {
 				klog.Error(err)
 			}
-			continue
-		}
-
-		err := a.Ch.Nack(ack.Id, false, false)
-		if err != nil {
-			klog.Error(err)
 		}
 	}
 }

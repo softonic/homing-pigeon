@@ -18,7 +18,7 @@ type Reader struct {
 
 // Start starts the reader.
 func (r *Reader) Start(ctx context.Context) {
-	go r.ReadAdapter.HandleAck(r.AckChannel)
+	go r.ReadAdapter.HandleAck(ctx, r.AckChannel)
 	r.ReadAdapter.Listen(ctx, r.MsgChannel)
 }
 

@@ -75,14 +75,16 @@ func (m *MiddlwareManager) Start(ctx context.Context) {
 		default:
 			// Do the normal work
 			msgBatch, ok := m.getBatch(ctx)
+			if len(msgBatch) > 0 {
+				klog.V(5).Infof("Sending message to proto")
+				start := time.Now()
+				m.processMessageBatch(msgBatch, client)
+				elapsed := time.Since(start)
+				klog.V(5).Infof("Middlewares took %s", elapsed)
+			}
 			if !ok {
 				return
 			}
-			klog.V(5).Infof("Sending message to proto")
-			start := time.Now()
-			m.processMessageBatch(msgBatch, client)
-			elapsed := time.Since(start)
-			klog.V(5).Infof("Middlewares took %s", elapsed)
 
 		}
 	}

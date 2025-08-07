@@ -50,9 +50,7 @@ func (ew *Writer) processAllMessages(ctx context.Context, msgChannel <-chan mess
 				go ew.trigger(ackChannel)
 			}
 		case <-time.After(ew.WriteAdapter.GetTimeout()):
-			if ew.shouldProcess() {
-				go ew.trigger(ackChannel)
-			}
+			go ew.trigger(ackChannel)
 		}
 	}
 }

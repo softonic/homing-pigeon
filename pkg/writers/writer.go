@@ -1,6 +1,7 @@
 package writers
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -18,10 +19,9 @@ type Writer struct {
 	mutex        *sync.Mutex
 }
 
-func (ew *Writer) Start() {
+func (ew *Writer) Start(ctx context.Context) {
 	ew.mutex = &sync.Mutex{}
-	go ew.timeout(ew.AckChannel)
-	ew.processAllMessages(ew.MsgChannel, ew.AckChannel)
+	ew.processAllMessages(ctx, ew.MsgChannel, ew.AckChannel)
 }
 
 func (ew *Writer) appendMessage(msg messages.Message) {
@@ -36,19 +36,22 @@ func (ew *Writer) shouldProcess() bool {
 	return res
 }
 
-func (ew *Writer) processAllMessages(msgChannel <-chan messages.Message, ackChannel chan<- messages.Message) {
-	for msg := range msgChannel {
-		ew.appendMessage(msg)
-		if ew.shouldProcess() {
+func (ew *Writer) processAllMessages(ctx context.Context, msgChannel <-chan messages.Message, ackChannel chan<- messages.Message) {
+	for {
+		select {
+		case <-ctx.Done():
+			if ew.shouldProcess() {
+				ew.trigger(ackChannel)
+			}
+			return
+		case msg := <-msgChannel:
+			ew.appendMessage(msg)
+			if ew.shouldProcess() {
+				go ew.trigger(ackChannel)
+			}
+		case <-time.After(ew.WriteAdapter.GetTimeout()):
 			go ew.trigger(ackChannel)
 		}
-	}
-}
-
-func (ew *Writer) timeout(ackChannel chan<- messages.Message) {
-	for {
-		time.Sleep(ew.WriteAdapter.GetTimeout())
-		go ew.trigger(ackChannel)
 	}
 }
 

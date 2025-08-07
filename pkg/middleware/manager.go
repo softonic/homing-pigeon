@@ -20,13 +20,22 @@ type MiddlwareManager struct {
 }
 
 // Start starts the middleware manager.
-func (m *MiddlwareManager) Start() {
+func (m *MiddlwareManager) Start(ctx context.Context) {
 	if m.isMiddlewareNotAvailable() {
 		klog.V(1).Infof("Middlewares not available")
-		for message := range m.InputChannel {
-			m.OutputChannel <- message
+		for {
+			select {
+			case <-ctx.Done():
+				klog.V(1).Infof("Context cancelled, stopping middleware manager")
+				return
+			case msg, ok := <-m.InputChannel:
+				if !ok {
+					klog.V(1).Infof("Input channel closed, stopping middleware manager")
+					return
+				}
+				m.OutputChannel <- msg
+			}
 		}
-		return
 	}
 
 	klog.V(1).Infof("Middlewares available")
@@ -48,32 +57,57 @@ func (m *MiddlwareManager) Start() {
 	client := proto.NewMiddlewareClient(conn)
 
 	for {
-		msgBatch, ok := m.getBatch()
-		klog.V(5).Infof("Sending message to proto")
-		start := time.Now()
-		m.processMessageBatch(msgBatch, client)
-		if !ok {
-			klog.V(1).Infof("Input channel closed, stopping middleware manager")
-			return
+		select {
+		case <-ctx.Done():
+			for {
+				select {
+				case msg, ok := <-m.InputChannel:
+					if !ok {
+						return // Channel closed
+					}
+					// Create single message batch and process
+					m.processMessageBatch([]messages.Message{msg}, client)
+				default:
+					close(m.OutputChannel)
+					return // No more messages, safe to exit
+				}
+			}
+		default:
+			// Do the normal work
+			msgBatch, ok := m.getBatch(ctx)
+			if !ok {
+				return
+			}
+			klog.V(5).Infof("Sending message to proto")
+			start := time.Now()
+			m.processMessageBatch(msgBatch, client)
+			elapsed := time.Since(start)
+			klog.V(5).Infof("Middlewares took %s", elapsed)
+
 		}
-		elapsed := time.Since(start)
-		klog.V(5).Infof("Middlewares took %s", elapsed)
 	}
+
 }
 
 // tries to get a full batch of messages from the input channel or times out with the current batch size
-func (m *MiddlwareManager) getBatch() ([]messages.Message, bool) {
+func (m *MiddlwareManager) getBatch(ctx context.Context) ([]messages.Message, bool) {
 	msgBatch := make([]messages.Message, 0, m.BatchSize)
 	// Read the first message from the channel to avoid infinite polling timeouts when no activity
-	msg, ok := <-m.InputChannel
-	if !ok {
-		return msgBatch, false
+	var msg messages.Message
+	var ok bool
+	select {
+	case <-ctx.Done():
+		return msgBatch, false // Context cancelled
+	case msg, ok = <-m.InputChannel:
+		if !ok {
+			return msgBatch, false // Channel closed
+		}
 	}
 	msgBatch = append(msgBatch, msg)
 	if len(msgBatch) >= m.BatchSize {
 		return msgBatch, true
 	}
-	ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), m.BatchTimeout)
+	ctxTimeout, cancelTimeout := context.WithTimeout(ctx, m.BatchTimeout)
 	defer cancelTimeout()
 	for {
 		select {

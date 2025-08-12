@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/elastic/go-elasticsearch/v9"
+	"github.com/elastic/go-elasticsearch/v9/esapi"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	esAdapter "github.com/softonic/homing-pigeon/pkg/writers/adapters/elasticsearch"
 	"k8s.io/klog"
@@ -57,6 +57,7 @@ func (es *Elasticsearch) ProcessMessages(msgs *[]messages.Message) {
 	}
 
 	response := es.getResponseFromResult(result)
+	result.Body.Close()
 	es.setAcksFromResponse(response, msgs)
 }
 

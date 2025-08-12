@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/elastic/go-elasticsearch/v9/esapi"
 	"github.com/softonic/homing-pigeon/pkg/messages"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

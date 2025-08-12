@@ -94,7 +94,7 @@ func TestMiddlewareManager_Start_WithoutMiddleware(t *testing.T) {
 	// Start manager in goroutine
 	done := make(chan bool)
 	go func() {
-		manager.Start()
+		manager.Start(context.Background())
 		close(outputChan)
 		done <- true
 	}()
@@ -184,7 +184,7 @@ func TestMiddlewareManager_Start_WithMiddleware_Integration(t *testing.T) {
 	// Start manager in goroutine
 	done := make(chan bool)
 	go func() {
-		manager.Start()
+		manager.Start(context.Background())
 		close(outputChan)
 		done <- true
 	}()
@@ -229,7 +229,7 @@ func TestMiddlewareManager_GetBatch(t *testing.T) {
 			inputChan <- messages.Message{Id: uint64(i), Body: []byte("test")}
 		}
 
-		batch, ok := manager.getBatch()
+		batch, ok := manager.getBatch(context.Background())
 		assert.True(t, ok)
 		assert.Len(t, batch, 3)
 		assert.Equal(t, uint64(1), batch[0].Id)
@@ -246,7 +246,7 @@ func TestMiddlewareManager_GetBatch(t *testing.T) {
 		inputChan <- messages.Message{Id: 1, Body: []byte("test1")}
 		inputChan <- messages.Message{Id: 2, Body: []byte("test2")}
 
-		batch, ok := manager.getBatch()
+		batch, ok := manager.getBatch(context.Background())
 		assert.True(t, ok)
 		assert.Len(t, batch, 2) // Should timeout and return partial batch
 		assert.Equal(t, uint64(1), batch[0].Id)
@@ -260,7 +260,7 @@ func TestMiddlewareManager_GetBatch(t *testing.T) {
 
 		close(inputChan)
 
-		batch, ok := manager.getBatch()
+		batch, ok := manager.getBatch(context.Background())
 		assert.False(t, ok)
 		assert.Empty(t, batch)
 	})
@@ -279,7 +279,7 @@ func TestMiddlewareManager_GetBatch(t *testing.T) {
 		})
 
 		go func() {
-			batch, ok := manager.getBatch()
+			batch, ok := manager.getBatch(context.Background())
 			batchResult <- struct {
 				batch []messages.Message
 				ok    bool

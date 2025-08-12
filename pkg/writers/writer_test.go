@@ -1,6 +1,7 @@
 package writers
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -30,8 +31,7 @@ func TestAdapterProcessSingleMessage(t *testing.T) {
 		Id:   0,
 		Body: []byte("hello"),
 	}
-
-	go writer.Start()
+	go writer.Start(context.Background())
 
 	assert.Eventually(
 		t,
@@ -67,8 +67,7 @@ func TestAdapterProcessBulkMessages(t *testing.T) {
 	}
 
 	writeMessagesToChannel(&msgChannel)
-
-	go writer.Start()
+	go writer.Start(context.Background())
 
 	assert.Eventually(
 		t,
@@ -100,8 +99,7 @@ func TestAdapterTimeoutProcessMessages(t *testing.T) {
 	}
 
 	writeMessagesToChannel(&msgChannel)
-
-	go writer.Start()
+	go writer.Start(context.Background())
 
 	assert.Eventually(
 		t,

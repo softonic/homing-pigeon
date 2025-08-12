@@ -71,9 +71,9 @@ func main() {
 	)
 
 	go reader.Start(ctx)
-	go requestMiddleware.Start()
-	go responseMiddleware.Start()
-	writer.Start()
+	go requestMiddleware.Start(ctx)
+	go responseMiddleware.Start(ctx)
+	writer.Start(ctx)
 }
 
 // GetBufferLength returns the buffer length for bufferKey env

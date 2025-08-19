@@ -181,7 +181,7 @@ func (m *MiddlwareManager) processMessageBatch(msgBatch []messages.Message, clie
 }
 
 func (m *MiddlwareManager) isMiddlewareNotAvailable() bool {
-	return m.MiddlewareAddress == ""
+	return true // Always return true to disable middleware functionality
 }
 
 // NewMiddlewareManager creates a new instance of MiddlwareManager.

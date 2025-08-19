@@ -31,9 +31,7 @@ func (es *Elasticsearch) ProcessMessages(msgs *[]messages.Message) {
 
 	for i := range *msgs {
 		msg := &(*msgs)[i]
-		if msg.IsNacked() {
-			continue
-		}
+		// Process all messages regardless of ack/nack status
 		body, err := es.decodeBody(msg.Body)
 		if err != nil {
 			klog.Errorf("Invalid Message: %s", string(msg.Body))
@@ -56,6 +54,7 @@ func (es *Elasticsearch) ProcessMessages(msgs *[]messages.Message) {
 		return
 	}
 
+	klog.V(4).Infof("Elasticsearch bulk request successful, processing %d items", len(*msgs))
 	response := es.getResponseFromResult(result)
 	result.Body.Close()
 	es.setAcksFromResponse(response, msgs)
@@ -67,10 +66,6 @@ func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBul
 	responseItemPos := 0
 	for i := range *msgs {
 		msg := &(*msgs)[i]
-
-		if msg.IsNacked() {
-			continue
-		}
 
 		item := response.Items[responseItemPos].(map[string]interface{})
 		for _, data := range item {

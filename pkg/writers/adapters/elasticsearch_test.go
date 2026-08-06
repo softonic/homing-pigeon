@@ -240,3 +240,212 @@ func TestBulkActionWithNoMetadata(t *testing.T) {
 	assert.Len(t, msgs, 1)
 	assert.Empty(t, msgs[0].IsNacked())
 }
+
+func TestDeleteNotFoundIsNackedByDefault(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:  0,
+		FlushInterval: 0,
+		Bulk:          bulk.getBulkFunc(),
+	}
+
+	response := esapi.Response{
+		StatusCode: 201,
+		Header:     nil,
+		Body:       io.NopCloser(strings.NewReader("{\"errors\":false,\"items\":[{\"delete\":{\"_id\":\"123\",\"result\":\"not_found\",\"status\":404}}]}")),
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	msgs := []messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"meta\": {\"delete\": {\"_id\":\"123\"}} }"),
+		},
+	}
+
+	esAdapter.ProcessMessages(&msgs)
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, msgs, 1)
+	assert.True(t, msgs[0].IsNacked())
+}
+
+func TestDeleteNotFoundIsAckedWhenAckDeleteNotFoundIsEnabled(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:      0,
+		FlushInterval:     0,
+		Bulk:              bulk.getBulkFunc(),
+		AckDeleteNotFound: true,
+	}
+
+	response := esapi.Response{
+		StatusCode: 201,
+		Header:     nil,
+		Body:       io.NopCloser(strings.NewReader("{\"errors\":false,\"items\":[{\"delete\":{\"_id\":\"123\",\"result\":\"not_found\",\"status\":404}}]}")),
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	msgs := []messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"meta\": {\"delete\": {\"_id\":\"123\"}} }"),
+		},
+	}
+
+	esAdapter.ProcessMessages(&msgs)
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, msgs, 1)
+	assert.True(t, msgs[0].IsAcked())
+}
+
+func TestDeleteNotFoundWithErrorIsNackedWhenAckDeleteNotFoundIsEnabled(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:      0,
+		FlushInterval:     0,
+		Bulk:              bulk.getBulkFunc(),
+		AckDeleteNotFound: true,
+	}
+
+	response := esapi.Response{
+		StatusCode: 201,
+		Header:     nil,
+		Body:       io.NopCloser(strings.NewReader("{\"errors\":true,\"items\":[{\"delete\":{\"_id\":\"123\",\"error\":{\"type\":\"index_not_found_exception\",\"reason\":\"no such index [foo]\"},\"status\":404}}]}")),
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	msgs := []messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"meta\": {\"delete\": {\"_id\":\"123\"}} }"),
+		},
+	}
+
+	esAdapter.ProcessMessages(&msgs)
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, msgs, 1)
+	assert.True(t, msgs[0].IsNacked())
+}
+
+func TestNonDeleteNotFoundIsNackedWhenAckDeleteNotFoundIsEnabled(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:      0,
+		FlushInterval:     0,
+		Bulk:              bulk.getBulkFunc(),
+		AckDeleteNotFound: true,
+	}
+
+	response := esapi.Response{
+		StatusCode: 201,
+		Header:     nil,
+		Body:       io.NopCloser(strings.NewReader("{\"errors\":true,\"items\":[{\"index\":{\"_id\":\"123\",\"status\":404}}]}")),
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	msgs := []messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"meta\": {\"index\": {\"_id\":\"123\"}} }"),
+		},
+	}
+
+	esAdapter.ProcessMessages(&msgs)
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, msgs, 1)
+	assert.True(t, msgs[0].IsNacked())
+}
+
+func TestBulkActionWithMixedItemStatusAndAckDeleteNotFoundEnabled(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:      0,
+		FlushInterval:     0,
+		Bulk:              bulk.getBulkFunc(),
+		AckDeleteNotFound: true,
+	}
+
+	response := esapi.Response{
+		StatusCode: 201,
+		Header:     nil,
+		Body:       io.NopCloser(strings.NewReader("{\"errors\":true,\"items\":[{\"delete\":{\"_id\":\"1\",\"result\":\"not_found\",\"status\":404}},{\"create\":{\"_id\":\"2\",\"status\":409}},{\"create\":{\"_id\":\"3\",\"status\":200}}]}")),
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	msgs := []messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"meta\": {\"delete\": {\"_id\":\"1\"}} }"),
+		},
+		{
+			Id:   1,
+			Body: []byte("{ \"meta\": {\"create\": {\"_id\":\"2\"}} }"),
+		},
+		{
+			Id:   2,
+			Body: []byte("{ \"meta\": {\"create\": {\"_id\":\"3\"}} }"),
+		},
+	}
+
+	esAdapter.ProcessMessages(&msgs)
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, msgs, 3)
+	assert.True(t, msgs[0].IsAcked())
+	assert.True(t, msgs[1].IsNacked())
+	assert.True(t, msgs[2].IsAcked())
+}
+
+func TestUndecodableBulkResponseNacksAllMessagesWithoutPanicking(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:  0,
+		FlushInterval: 0,
+		Bulk:          bulk.getBulkFunc(),
+	}
+
+	response := esapi.Response{
+		StatusCode: 200,
+		Header:     nil,
+		Body:       io.NopCloser(strings.NewReader("this-is-not-json")),
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	msgs := []messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"meta\": {\"delete\": {\"_id\":\"1\"}} }"),
+		},
+		{
+			Id:   1,
+			Body: []byte("{ \"meta\": {\"delete\": {\"_id\":\"2\"}} }"),
+		},
+	}
+
+	esAdapter.ProcessMessages(&msgs)
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, msgs, 2)
+	assert.True(t, msgs[0].IsNacked())
+	assert.True(t, msgs[1].IsNacked())
+}
+
+func TestNewElasticsearchAdapterReadsAckDeleteNotFoundFromEnv(t *testing.T) {
+	t.Setenv("ELASTICSEARCH_ACK_DELETE_NOT_FOUND", "true")
+
+	adapter, err := NewElasticsearchAdapter()
+
+	assert.NoError(t, err)
+	assert.True(t, adapter.(*Elasticsearch).AckDeleteNotFound)
+}
+
+func TestNewElasticsearchAdapterDefaultsAckDeleteNotFoundToFalse(t *testing.T) {
+	adapter, err := NewElasticsearchAdapter()
+
+	assert.NoError(t, err)
+	assert.False(t, adapter.(*Elasticsearch).AckDeleteNotFound)
+}

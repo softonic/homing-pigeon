@@ -16,9 +16,10 @@ import (
 )
 
 type Elasticsearch struct {
-	FlushMaxSize  int
-	FlushInterval time.Duration
-	Bulk          esapi.Bulk
+	FlushMaxSize      int
+	FlushInterval     time.Duration
+	Bulk              esapi.Bulk
+	AckDeleteNotFound bool
 }
 
 func (es *Elasticsearch) ProcessMessages(msgs *[]messages.Message) {
@@ -72,17 +73,29 @@ func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBul
 			continue
 		}
 
+		if responseItemPos >= len(response.Items) {
+			klog.Warningf("Bulk response has fewer items than sent messages, nacking message: %v", msg.Id)
+			msg.Nack()
+			continue
+		}
+
 		item := response.Items[responseItemPos].(map[string]interface{})
-		for _, data := range item {
+		for operation, data := range item {
 			values := data.(map[string]interface{})
 			status := int(values["status"].(float64))
 
-			if status > maxValidStatus {
-				klog.Warningf("Item has invalid status: %v", data)
-
-				msg.Nack()
-			} else {
+			switch {
+			case status <= maxValidStatus:
 				msg.Ack()
+			case es.AckDeleteNotFound && operation == "delete" && status == 404 && values["error"] == nil:
+				// Elasticsearch treats deleting a missing document as an
+				// idempotent success (result: not_found), so there is no
+				// point in dead-lettering the message.
+				klog.V(2).Infof("Discarding delete on missing document: %v", data)
+				msg.Ack()
+			default:
+				klog.Warningf("Item has invalid status: %v", data)
+				msg.Nack()
 			}
 		}
 		responseItemPos++
@@ -155,13 +168,19 @@ func NewElasticsearchAdapter() (WriteAdapter, error) {
 		flushMaxIntervalMs = 1000
 	}
 
+	ackDeleteNotFound, err := strconv.ParseBool(os.Getenv("ELASTICSEARCH_ACK_DELETE_NOT_FOUND"))
+	if err != nil {
+		ackDeleteNotFound = false
+	}
+
 	es, err := elasticsearch.NewClient(elasticsearch.Config{})
 	if err != nil {
 		return nil, err
 	}
 	return &Elasticsearch{
-		FlushMaxSize:  flushMaxSize,
-		FlushInterval: time.Duration(flushMaxIntervalMs) * time.Millisecond,
-		Bulk:          es.Bulk,
+		FlushMaxSize:      flushMaxSize,
+		FlushInterval:     time.Duration(flushMaxIntervalMs) * time.Millisecond,
+		Bulk:              es.Bulk,
+		AckDeleteNotFound: ackDeleteNotFound,
 	}, nil
 }

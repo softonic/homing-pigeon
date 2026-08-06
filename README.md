@@ -122,6 +122,7 @@ For more options see [Bulk API reference](https://www.elastic.co/guide/en/elasti
 | ELASTICSEARCH_URL                    | Elasticsearch url string                                           |
 | ELASTICSEARCH_FLUSH_MAX_SIZE         | Elasticsearch flush to bulk API maximum size                       |
 | ELASTICSEARCH_FLUSH_MAX_INTERVAL_MS  | Elasticsearch flush to bulk API max interval time, in milliseconds |
+| ELASTICSEARCH_ACK_DELETE_NOT_FOUND   | When `true`, `delete` bulk items answered with `404`/`not_found` (no `error` object) are acked instead of nacked, so idempotent deletes of missing documents are not dead lettered. Defaults to `false` |
 
 ### Development
 

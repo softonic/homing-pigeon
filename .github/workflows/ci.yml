@@ -8,7 +8,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.23]
+        go-version: [1.26]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     env:

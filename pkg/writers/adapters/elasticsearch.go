@@ -89,9 +89,10 @@ func (es *Elasticsearch) setAcksFromResponse(response esAdapter.ElasticSearchBul
 				msg.Ack()
 			case es.AckDeleteNotFound && operation == "delete" && status == 404 && values["error"] == nil:
 				// Elasticsearch treats deleting a missing document as an
-				// idempotent success (result: not_found), so there is no
-				// point in dead-lettering the message.
-				klog.V(2).Infof("Discarding delete on missing document: %v", data)
+				// idempotent success (result: not_found), so we report the
+				// message as acked instead of letting the read adapter
+				// handle it as a failure.
+				klog.V(2).Infof("Acking delete on missing document: %v", data)
 				msg.Ack()
 			default:
 				klog.Warningf("Item has invalid status: %v", data)

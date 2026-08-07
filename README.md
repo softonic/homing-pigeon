@@ -18,20 +18,41 @@ A few examples could be: AMQP to Elasticsearch, HTTP to MySQL, HTTP to HTTP, or 
 
 An important detail, is that the message will be forwarded from the read interface to the write interface "as is", therefore the expected format would depend on which write adapter is connected.
 
+### Message flow and ack/nack semantics
+
+```
+Reader ──> [request middlewares] ──> Writer ──> [response middlewares] ──> Reader (ack/nack)
+```
+
+Every message read from the input ends up **acked** or **nacked** back on the read adapter;
+what each of those means (delete, dead letter, retry…) is the read adapter's decision, the
+writer only reports the outcome per message.
+
+Middlewares are external gRPC services chained between the reader and the writer (request
+middlewares) and between the writer and the reader (response middlewares). They receive
+batches of messages and can transform bodies and nack messages, but they can **not** ack a
+message the writer nacked (there is no un-nack in the protocol) and they never see the
+writer's backend response (e.g. the Elasticsearch bulk response). A failing middleware call
+nacks the whole batch.
+
 ### Currently implemented interfaces
 
 #### Read interfaces
 
 ##### RabbitMQ
 
-Reader interface reads messages from a single queue and acks or (optionally) nacks the message, depending
- as the writer will indicate. All nacks will be automatically dead lettered without retrying
+Reads messages from a single queue and acks or nacks (`requeue=false`) each message as the
+writer indicates. On startup it declares the exchanges, the queue (with
+`x-dead-letter-exchange` pointing to `RABBITMQ_DLX_NAME`) and the dead letter
+exchange/queue, so all nacked messages are dead lettered without retrying.
+
+> Note: the dead letter **queue** is declared non-durable, so a large backlog lives in the
+> broker's memory.
 
 #### Write interfaces
 
 ##### Elasticsearch with bulk API
 
-Failed messages will be nacked, and successful messages will be acked.
 It supports a well defined JSON format, which of course reminds of elasticsearch Bulk API:
 
 ```json
@@ -42,6 +63,17 @@ It supports a well defined JSON format, which of course reminds of elasticsearch
 ```
 
 More info can be found at [elasticsearch's official doc](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html)
+
+Per-message outcome:
+
+| Situation                                                                                                                     | Outcome                             |
+| ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Bulk item answered with status <= 299                                                                                          | ack                                 |
+| `delete` item answered with 404, `result: not_found` and no `error` object, with `ELASTICSEARCH_ACK_DELETE_NOT_FOUND=true`     | ack (idempotent delete, discarded)  |
+| Any other bulk item with status > 299 (including 404s carrying an `error` object, e.g. `index_not_found_exception`)            | nack                                |
+| Whole bulk request fails or answers an HTTP error status                                                                       | every message in the batch is nacked |
+| Bulk response body cannot be decoded                                                                                            | remaining messages are nacked       |
+| Message body is not valid JSON                                                                                                  | nack (never sent to Elasticsearch)  |
 
 ### Example
 
@@ -126,10 +158,12 @@ For more options see [Bulk API reference](https://www.elastic.co/guide/en/elasti
 
 ### Development
 
-To run docker build:
+To install the dev tools (`gotest`, `mockery`, `protoc-gen-go`) and download the module
+dependencies (this does not modify `go.mod`/`go.sum` — library versions always come from the
+committed files):
 
 ```bash
-make docker-build
+make dep
 ```
 
 To run the application:
@@ -138,11 +172,30 @@ To run the application:
 docker compose up -d
 ```
 
-To run tests:
+To run tests (plain `go test -race ./...` works too):
 
 ```bash
 make test
 ```
+
+To regenerate mocks (`make mock`) or the gRPC middleware protocol (`make generate-proto`,
+requires `protoc`).
+
+### Releasing
+
+CI only builds, lints and tests — it does **not** publish images. Releases are manual:
+
+1. Merge to master and tag it: `git tag vX.Y.Z && git push --tags`
+2. Publish the multi-arch image (pushes `softonic/homing-pigeon:X.Y.Z` to Docker Hub, note
+   the image tag has no `v` prefix):
+
+   ```bash
+   make docker-build TAG=X.Y.Z
+   ```
+
+3. If the deployment needs new configuration, update the
+   [Helm chart](https://github.com/softonic/homing-pigeon-chart) (published to
+   `charts.softonic.io` on merge to its master).
 
 ### Roadmap
 

@@ -53,6 +53,7 @@ func main() {
 
 	batchSize := helpers.GetIntEnv("MIDDLEWARE_BATCH_SIZE", 50)
 	batchTimeout := time.Duration(helpers.GetIntEnv("MIDDLEWARE_BATCH_TIMEOUT_MS", 100)) * time.Millisecond
+	callTimeout := time.Duration(helpers.GetIntEnv("MIDDLEWARE_CALL_TIMEOUT_MS", 31_000)) * time.Millisecond
 
 	requestMiddleware := middleware.NewMiddlewareManager(
 		msgChBeforeMiddleware,
@@ -60,6 +61,7 @@ func main() {
 		helpers.GetEnv("REQUEST_MIDDLEWARES_SOCKET", ""),
 		batchSize,
 		batchTimeout,
+		callTimeout,
 	)
 
 	responseMiddleware := middleware.NewMiddlewareManager(
@@ -68,6 +70,7 @@ func main() {
 		helpers.GetEnv("RESPONSE_MIDDLEWARES_SOCKET", ""),
 		batchSize,
 		batchTimeout,
+		callTimeout,
 	)
 
 	go reader.Start(ctx)

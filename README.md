@@ -113,6 +113,7 @@ In order to start up correctly, it needs well defined environment variables:
 | WRITE_ADAPTER                 | Write interface implementation. Default: ELASTIC                                                     |
 | MIDDLEWARE_BATCH_SIZE         | Number of messages to send in batch to the middleware (Defaults to 50).                              |
 | MIDDLEWARE_BATCH_TIMEOUT_MS   | Max time to wait until getting a full size batch in milliseconds (Defaults to 100ms).                |
+| MIDDLEWARE_CALL_TIMEOUT_MS    | Max time to wait for a middleware call to complete, including waiting for the middleware to become reachable; on expiry the batch is nacked (Defaults to 31000ms). |
 
 ##### Read Adapters
 

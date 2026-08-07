@@ -3,11 +3,9 @@ TAG ?= dev
 generate-proto:
 	protoc -I proto/ proto/middleware.proto --go_out=plugins=grpc:proto
 dep:
-	go get -u github.com/rakyll/gotest
-	go get -u github.com/vektra/mockery/.../
-	go get -u github.com/golang/protobuf/proto
+	go install github.com/rakyll/gotest@latest
+	go install github.com/vektra/mockery/v2@latest
 	go install github.com/golang/protobuf/protoc-gen-go@v1.3.2
-	go get -u google.golang.org/grpc
 	go mod download
 build: dep generate-proto
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-w -s" -o bin/homing-pigeon pkg/main.go

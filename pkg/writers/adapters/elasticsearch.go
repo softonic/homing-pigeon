@@ -43,6 +43,12 @@ func (es *Elasticsearch) ProcessMessages(msgs *[]messages.Message) {
 		}
 		err = es.writeToBuffer(&buf, body)
 		if err != nil {
+			// Nacking here is required for correctness, not only to report
+			// the invalid message: setAcksFromResponse skips nacked
+			// messages, so leaving it unresolved would shift the bulk
+			// response attribution for the rest of the batch.
+			klog.Errorf("Invalid Message: %s", string(msg.Body))
+			msg.Nack()
 			continue
 		}
 	}

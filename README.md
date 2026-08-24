@@ -73,7 +73,7 @@ Per-message outcome:
 | Any other bulk item with status > 299 (including 404s carrying an `error` object, e.g. `index_not_found_exception`)            | nack                                |
 | Whole bulk request fails or answers an HTTP error status                                                                       | every message in the batch is nacked |
 | Bulk response body cannot be decoded                                                                                            | remaining messages are nacked       |
-| Message body is not valid JSON                                                                                                  | nack (never sent to Elasticsearch)  |
+| Message body is not valid JSON, or cannot be turned into a bulk line (e.g. missing `meta`)                                      | nack (never sent to Elasticsearch)  |
 
 ### Example
 

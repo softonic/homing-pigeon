@@ -238,7 +238,49 @@ func TestBulkActionWithNoMetadata(t *testing.T) {
 	bulk.AssertNotCalled(t, "func1", mock.Anything)
 	bulk.AssertExpectations(t)
 	assert.Len(t, msgs, 1)
-	assert.Empty(t, msgs[0].IsNacked())
+	assert.True(t, msgs[0].IsNacked())
+}
+
+func TestMessageWithoutMetadataInBatchDoesNotShiftResponseAttribution(t *testing.T) {
+	bulk := new(BulkMock)
+	esAdapter := Elasticsearch{
+		FlushMaxSize:  0,
+		FlushInterval: 0,
+		Bulk:          bulk.getBulkFunc(),
+	}
+
+	// Only the first and last messages reach the bulk request, so the
+	// response carries two items: a failure for msg 0 and a success for
+	// msg 2. The meta-less msg 1 must not consume a response position.
+	response := esapi.Response{
+		StatusCode: 201,
+		Header:     nil,
+		Body:       io.NopCloser(strings.NewReader("{\"errors\":true,\"items\":[{\"create\":{\"_id\":\"1\",\"status\":409}},{\"create\":{\"_id\":\"3\",\"status\":200}}]}")),
+	}
+	bulk.On("func1", mock.Anything).Once().Return(&response, nil)
+
+	msgs := []messages.Message{
+		{
+			Id:   0,
+			Body: []byte("{ \"meta\": {\"create\": {\"_id\":\"1\"}} }"),
+		},
+		{
+			Id:   1,
+			Body: []byte("{ \"foobar\": {\"create\": {\"_id\":\"2\"}} }"),
+		},
+		{
+			Id:   2,
+			Body: []byte("{ \"meta\": {\"create\": {\"_id\":\"3\"}} }"),
+		},
+	}
+
+	esAdapter.ProcessMessages(&msgs)
+
+	bulk.AssertExpectations(t)
+	assert.Len(t, msgs, 3)
+	assert.True(t, msgs[0].IsNacked())
+	assert.True(t, msgs[1].IsNacked())
+	assert.True(t, msgs[2].IsAcked())
 }
 
 func TestDeleteNotFoundIsNackedByDefault(t *testing.T) {

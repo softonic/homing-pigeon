@@ -18,7 +18,7 @@ linters:
         - -QF1007
         # Pre-existing ineffective break in the AMQP reader's Notify
         # handling; "fixing" it blindly would change runtime behavior, so
-        # it is tracked separately instead of silenced with a rewrite.
+        # it is tracked in issue #45 instead of silenced with a rewrite.
         - -SA4011
   exclusions:
     presets:

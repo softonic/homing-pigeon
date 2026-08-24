@@ -38,15 +38,15 @@ nacks the whole batch.
 ### Middlewares
 
 ```
-  AMQP
+  Reader adapter (e.g. AMQP)
    |
   Request ──> Middleware ──> Middleware ──> … ──> Middleware
    |
-Elasticsearch
+  Writer adapter (e.g. Elasticsearch)
    |
   Response ──> Middleware ──> Middleware ──> … ──> Middleware
    |
-  AMQP
+  Reader adapter (e.g. AMQP)
 ```
 
 There are two independent chains:
@@ -79,17 +79,18 @@ the **same number of messages, with the same ids, in the same order**. It may:
 - set `nacked: true` to reject a message.
 
 It can **not** ack messages (`acked` in the response is ignored — only the writer acks), and
-it can not un-nack a message. Any protocol violation — an error response, a length mismatch
-or an id mismatch — nacks the **whole batch**. If the middleware is unreachable, the call
-waits for it to become ready and retries on `UNAVAILABLE` (5 attempts with backoff) up to the
-call timeout (31s by default); on expiry the batch is nacked.
+it can not un-nack a message. An error response or a length mismatch nacks the **whole
+batch**; an id mismatch nacks **only that message**, the rest of the batch keeps its returned
+outcome. If the middleware is unreachable, the call waits for it to become ready and retries
+on `UNAVAILABLE` (5 attempts with backoff) up to the call timeout
+(`MIDDLEWARE_CALL_TIMEOUT_MS`, 31s by default); on expiry the batch is nacked.
 
 #### Writing and deploying one
 
 - **Go**: implement `proto.MiddlewareServer`; the
   [`pkg/middleware.UnimplementedMiddleware`](pkg/middleware/unimplemented.go) helper provides
   `Listen()` (socket setup) and `Next()` (forwarding to the next middleware). See
-  [hp-pass-middleware](https://github.com/softonic/hp-pass-middleware) for a minimal
+  [hp-passthrough](https://github.com/softonic/hp-passthrough) for a minimal
   passthrough example.
 - **Any other language**: implement the service from `proto/middleware.proto` over a Unix
   socket, honoring the contract above.

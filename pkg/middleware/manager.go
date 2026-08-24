@@ -17,6 +17,7 @@ type MiddlwareManager struct {
 	MiddlewareAddress string
 	BatchSize         int
 	BatchTimeout      time.Duration
+	CallTimeout       time.Duration
 }
 
 // Start starts the middleware manager.
@@ -142,7 +143,7 @@ func (m *MiddlwareManager) processMessageBatch(msgBatch []messages.Message, clie
 		}
 	}
 	// send messages with wait for the middleware to be ready
-	ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), 31*time.Second)
+	ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), m.CallTimeout)
 	handleData, err := client.Handle(ctxTimeout, &proto.Data{
 		Messages: protoMsgsRequest,
 	}, grpc.WaitForReady(true))
@@ -185,12 +186,13 @@ func (m *MiddlwareManager) isMiddlewareNotAvailable() bool {
 }
 
 // NewMiddlewareManager creates a new instance of MiddlwareManager.
-func NewMiddlewareManager(inputChannel chan messages.Message, outputChannel chan messages.Message, address string, batchSize int, batchTimeout time.Duration) *MiddlwareManager {
+func NewMiddlewareManager(inputChannel chan messages.Message, outputChannel chan messages.Message, address string, batchSize int, batchTimeout time.Duration, callTimeout time.Duration) *MiddlwareManager {
 	return &MiddlwareManager{
 		InputChannel:      inputChannel,
 		OutputChannel:     outputChannel,
 		MiddlewareAddress: address,
 		BatchSize:         batchSize,
 		BatchTimeout:      batchTimeout,
+		CallTimeout:       callTimeout,
 	}
 }

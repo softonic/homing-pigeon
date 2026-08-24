@@ -32,6 +32,6 @@ func TestAcksAreRead(t *testing.T) {
 	go obj.HandleAck(ackChannel)
 
 	assert.Eventually(t, func() bool {
-		return assert.Empty(t, ackChannel)
-	}, time.Millisecond*10, time.Millisecond)
+		return len(ackChannel) == 0
+	}, time.Millisecond*100, time.Millisecond)
 }

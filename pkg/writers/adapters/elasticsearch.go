@@ -174,7 +174,9 @@ func NewElasticsearchAdapter() (WriteAdapter, error) {
 		ackDeleteNotFound = false
 	}
 
-	es, err := elasticsearch.NewClient(elasticsearch.Config{})
+	// With no options the client connects to the address(es) in the
+	// ELASTICSEARCH_URL environment variable, as NewClient did.
+	es, err := elasticsearch.New()
 	if err != nil {
 		return nil, err
 	}

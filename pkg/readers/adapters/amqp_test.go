@@ -31,7 +31,7 @@ func TestProcessMessage(t *testing.T) {
 	assert.Eventually(
 		t,
 		func() bool {
-			return assert.Len(t, msgChannel, expectedMessages)
+			return len(msgChannel) == expectedMessages
 		},
 		time.Millisecond*500,
 		time.Millisecond,
@@ -66,14 +66,19 @@ func TestHandleAck(t *testing.T) {
 
 	go obj.HandleAck(ackChannel)
 
+	// Poll with a throwaway T: the condition must not record failures on
+	// the real test, since Eventually may evaluate it before the
+	// goroutine has run.
 	assert.Eventually(
 		t,
 		func() bool {
-			return channel.AssertExpectations(t) && channel.AssertNotCalled(t, "Nack")
+			return channel.AssertExpectations(new(testing.T))
 		},
-		time.Millisecond*10,
+		time.Millisecond*100,
 		time.Millisecond,
 	)
+	channel.AssertExpectations(t)
+	channel.AssertNotCalled(t, "Nack")
 }
 
 func TestHandleNack(t *testing.T) {
@@ -103,11 +108,13 @@ func TestHandleNack(t *testing.T) {
 	assert.Eventually(
 		t,
 		func() bool {
-			return channel.AssertExpectations(t) && channel.AssertNotCalled(t, "Ack")
+			return channel.AssertExpectations(new(testing.T))
 		},
-		time.Millisecond*10,
+		time.Millisecond*100,
 		time.Millisecond,
 	)
+	channel.AssertExpectations(t)
+	channel.AssertNotCalled(t, "Ack")
 }
 
 func TestHandleMixedAcks(t *testing.T) {
@@ -146,9 +153,10 @@ func TestHandleMixedAcks(t *testing.T) {
 	assert.Eventually(
 		t,
 		func() bool {
-			return channel.AssertExpectations(t)
+			return channel.AssertExpectations(new(testing.T))
 		},
-		time.Millisecond*10,
+		time.Millisecond*100,
 		time.Millisecond,
 	)
+	channel.AssertExpectations(t)
 }

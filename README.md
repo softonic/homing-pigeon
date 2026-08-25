@@ -35,6 +35,69 @@ message the writer nacked (there is no un-nack in the protocol) and they never s
 writer's backend response (e.g. the Elasticsearch bulk response). A failing middleware call
 nacks the whole batch.
 
+### Middlewares
+
+```
+  Reader adapter (e.g. AMQP)
+   |
+  Request ──> Middleware ──> Middleware ──> … ──> Middleware
+   |
+  Writer adapter (e.g. Elasticsearch)
+   |
+  Response ──> Middleware ──> Middleware ──> … ──> Middleware
+   |
+  Reader adapter (e.g. AMQP)
+```
+
+There are two independent chains:
+
+- **Request middlewares** run between the reader and the writer, and are the place to
+  transform or enrich message bodies before they reach the write adapter.
+- **Response middlewares** run between the writer and the reader, once each message already
+  carries its `acked`/`nacked` outcome, and are the place to react to it (e.g. purge a cache
+  for successfully written documents). At this point mutating the body has no effect on what
+  was written.
+
+#### How the chain works
+
+Each middleware is a gRPC server implementing the `Middleware` service from
+[`proto/middleware.proto`](proto/middleware.proto) (`Handle(Data) returns (Data)`), listening
+on a Unix socket. Homing Pigeon only knows the **first** middleware of each chain
+(`REQUEST_MIDDLEWARES_SOCKET` / `RESPONSE_MIDDLEWARES_SOCKET`); chaining is nested — each
+middleware processes the batch, forwards it to the next one through its `OUT_SOCKET` (it
+listens on `IN_SOCKET`), and returns the final result back up the chain.
+
+Messages are sent in batches of up to `MIDDLEWARE_BATCH_SIZE`, waiting at most
+`MIDDLEWARE_BATCH_TIMEOUT_MS` to fill one.
+
+#### The contract
+
+A middleware receives `Data.messages` (`Id`, `Body`, `acked`, `nacked`) and must answer with
+the **same number of messages, with the same ids, in the same order**. It may:
+
+- mutate `Body` (request chain);
+- set `nacked: true` to reject a message.
+
+It can **not** ack messages (`acked` in the response is ignored — only the writer acks), and
+it can not un-nack a message. An error response or a length mismatch nacks the **whole
+batch**; an id mismatch nacks **only that message**, the rest of the batch keeps its returned
+outcome. If the middleware is unreachable, the call waits for it to become ready and retries
+on `UNAVAILABLE` (5 attempts with backoff) up to the call timeout
+(`MIDDLEWARE_CALL_TIMEOUT_MS`, 31s by default); on expiry the batch is nacked.
+
+#### Writing and deploying one
+
+- **Go**: implement `proto.MiddlewareServer`; the
+  [`pkg/middleware.UnimplementedMiddleware`](pkg/middleware/unimplemented.go) helper provides
+  `Listen()` (socket setup) and `Next()` (forwarding to the next middleware). See
+  [hp-passthrough](https://github.com/softonic/hp-passthrough) for a minimal
+  passthrough example.
+- **Any other language**: implement the service from `proto/middleware.proto` over a Unix
+  socket, honoring the contract above.
+- **Kubernetes**: the [Helm chart](https://github.com/softonic/homing-pigeon-chart) runs
+  middlewares as sidecar containers (`requestMiddlewares` / `responseMiddlewares` values) and
+  wires all the sockets automatically through a shared volume.
+
 ### Currently implemented interfaces
 
 #### Read interfaces

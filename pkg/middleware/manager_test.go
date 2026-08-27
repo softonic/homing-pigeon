@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -66,7 +67,7 @@ func TestMiddlewareManager_Start_WithoutMiddleware(t *testing.T) {
 	outputChan := make(chan messages.Message, 10)
 
 	// Create manager without middleware address
-	manager := NewMiddlewareManager(inputChan, outputChan, "", 5, time.Second, time.Second)
+	manager := NewMiddlewareManager(inputChan, outputChan, "", 5, time.Second, time.Second, 0)
 
 	// Send test messages
 	testMessages := []messages.Message{
@@ -155,7 +156,7 @@ func TestMiddlewareManager_Start_WithMiddleware_Integration(t *testing.T) {
 	outputChan := make(chan messages.Message, 10)
 
 	// Create manager with the Unix socket address
-	manager := NewMiddlewareManager(inputChan, outputChan, "unix://"+socketPath, 2, 100*time.Millisecond, time.Second)
+	manager := NewMiddlewareManager(inputChan, outputChan, "unix://"+socketPath, 2, 100*time.Millisecond, time.Second, 0)
 
 	// Send test messages
 	testMessages := []messages.Message{
@@ -222,7 +223,7 @@ func TestMiddlewareManager_GetBatch(t *testing.T) {
 		inputChan := make(chan messages.Message, 10)
 		outputChan := make(chan messages.Message, 10)
 		// Use a non-empty address to ensure this is in the "middleware available" path
-		manager := NewMiddlewareManager(inputChan, outputChan, "localhost:8080", 3, 100*time.Millisecond, time.Second)
+		manager := NewMiddlewareManager(inputChan, outputChan, "localhost:8080", 3, 100*time.Millisecond, time.Second, 0)
 
 		// Send 5 messages
 		for i := 1; i <= 5; i++ {
@@ -240,7 +241,7 @@ func TestMiddlewareManager_GetBatch(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		inputChan := make(chan messages.Message, 10)
 		outputChan := make(chan messages.Message, 10)
-		manager := NewMiddlewareManager(inputChan, outputChan, "localhost:8080", 3, 50*time.Millisecond, time.Second)
+		manager := NewMiddlewareManager(inputChan, outputChan, "localhost:8080", 3, 50*time.Millisecond, time.Second, 0)
 
 		// Send only 2 messages
 		inputChan <- messages.Message{Id: 1, Body: []byte("test1")}
@@ -256,7 +257,7 @@ func TestMiddlewareManager_GetBatch(t *testing.T) {
 	t.Run("ChannelCloseBeforeFirstMessage", func(t *testing.T) {
 		inputChan := make(chan messages.Message, 10)
 		outputChan := make(chan messages.Message, 10)
-		manager := NewMiddlewareManager(inputChan, outputChan, "localhost:8080", 3, 100*time.Millisecond, time.Second)
+		manager := NewMiddlewareManager(inputChan, outputChan, "localhost:8080", 3, 100*time.Millisecond, time.Second, 0)
 
 		close(inputChan)
 
@@ -268,7 +269,7 @@ func TestMiddlewareManager_GetBatch(t *testing.T) {
 	t.Run("ChannelCloseDuringBatch", func(t *testing.T) {
 		inputChan := make(chan messages.Message, 10)
 		outputChan := make(chan messages.Message, 10)
-		manager := NewMiddlewareManager(inputChan, outputChan, "localhost:8080", 3, 200*time.Millisecond, time.Second)
+		manager := NewMiddlewareManager(inputChan, outputChan, "localhost:8080", 3, 200*time.Millisecond, time.Second, 0)
 
 		// Send first message and start getBatch in goroutine
 		inputChan <- messages.Message{Id: 1, Body: []byte("test1")}
@@ -318,7 +319,7 @@ func TestMiddlewareManager_ProcessMessageBatch(t *testing.T) {
 
 	inputChan := make(chan messages.Message, 10)
 	outputChan := make(chan messages.Message, 10)
-	manager := NewMiddlewareManager(inputChan, outputChan, "", 3, time.Second, time.Second)
+	manager := NewMiddlewareManager(inputChan, outputChan, "", 3, time.Second, time.Second, 0)
 
 	t.Run("SuccessfulProcessing", func(t *testing.T) {
 		// Setup mock to return processed messages
@@ -644,7 +645,7 @@ func TestMiddlewareManager_ProcessMessageBatch_MiddlewareUnreachable(t *testing.
 
 	inputChan := make(chan messages.Message, 10)
 	outputChan := make(chan messages.Message, 10)
-	manager := NewMiddlewareManager(inputChan, outputChan, "unused", 3, time.Second, 300*time.Millisecond)
+	manager := NewMiddlewareManager(inputChan, outputChan, "unused", 3, time.Second, 300*time.Millisecond, 0)
 
 	testMessages := []messages.Message{
 		{Id: 1, Body: []byte("test1")},
@@ -682,12 +683,12 @@ func TestMiddlewareManager_IsMiddlewareNotAvailable(t *testing.T) {
 	outputChan := make(chan messages.Message, 10)
 
 	t.Run("MiddlewareNotAvailable", func(t *testing.T) {
-		manager := NewMiddlewareManager(inputChan, outputChan, "", 3, time.Second, time.Second)
+		manager := NewMiddlewareManager(inputChan, outputChan, "", 3, time.Second, time.Second, 0)
 		assert.True(t, manager.isMiddlewareNotAvailable())
 	})
 
 	t.Run("MiddlewareAvailable", func(t *testing.T) {
-		manager := NewMiddlewareManager(inputChan, outputChan, "localhost:8080", 3, time.Second, time.Second)
+		manager := NewMiddlewareManager(inputChan, outputChan, "localhost:8080", 3, time.Second, time.Second, 0)
 		assert.False(t, manager.isMiddlewareNotAvailable())
 	})
 }
@@ -700,7 +701,7 @@ func TestNewMiddlewareManager(t *testing.T) {
 	batchTimeout := 2 * time.Second
 	callTimeout := 10 * time.Second
 
-	manager := NewMiddlewareManager(inputChan, outputChan, address, batchSize, batchTimeout, callTimeout)
+	manager := NewMiddlewareManager(inputChan, outputChan, address, batchSize, batchTimeout, callTimeout, 0)
 
 	assert.NotNil(t, manager)
 	assert.Equal(t, address, manager.MiddlewareAddress)
@@ -711,4 +712,179 @@ func TestNewMiddlewareManager(t *testing.T) {
 	// but we can verify the manager was created with the correct channels by testing functionality
 	assert.NotNil(t, manager.InputChannel)
 	assert.NotNil(t, manager.OutputChannel)
+}
+
+// runManagerCollectingBatchSizes feeds msgs through a manager wired to a real
+// gRPC server and returns, per Handle call, how many messages it carried,
+// together with every message that came out the other end.
+func runManagerCollectingBatchSizes(t *testing.T, msgs []messages.Message, batchSize int, batchMaxBytes int) ([]int, []messages.Message) {
+	t.Helper()
+
+	var mutex sync.Mutex
+	var batchSizes []int
+	mockServer := &MockMiddlewareServer{
+		HandleFunc: func(ctx context.Context, req *proto.Data) (*proto.Data, error) {
+			mutex.Lock()
+			batchSizes = append(batchSizes, len(req.Messages))
+			mutex.Unlock()
+			responseMessages := make([]*proto.Data_Message, len(req.Messages))
+			for i, msg := range req.Messages {
+				responseMessages[i] = &proto.Data_Message{Id: msg.Id, Body: msg.Body}
+			}
+			return &proto.Data{Messages: responseMessages}, nil
+		},
+	}
+
+	socketPath := "/tmp/test_middleware_" + t.Name() + ".sock"
+	_ = os.Remove(socketPath)
+	lis, err := net.Listen("unix", socketPath)
+	require.NoError(t, err)
+	defer lis.Close()
+	defer os.Remove(socketPath)
+
+	server := grpc.NewServer()
+	proto.RegisterMiddlewareServer(server, mockServer)
+	go func() {
+		_ = server.Serve(lis)
+	}()
+	defer server.Stop()
+
+	inputChan := make(chan messages.Message, len(msgs))
+	outputChan := make(chan messages.Message, len(msgs))
+
+	manager := NewMiddlewareManager(inputChan, outputChan, "unix://"+socketPath, batchSize, 100*time.Millisecond, time.Second, batchMaxBytes)
+
+	go func() {
+		for _, msg := range msgs {
+			inputChan <- msg
+		}
+		close(inputChan)
+	}()
+
+	var outputMessages []messages.Message
+	outputDone := make(chan bool)
+	go func() {
+		for msg := range outputChan {
+			outputMessages = append(outputMessages, msg)
+		}
+		outputDone <- true
+	}()
+
+	done := make(chan bool)
+	go func() {
+		manager.Start(context.Background())
+		close(outputChan)
+		done <- true
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Test timed out")
+	}
+	<-outputDone
+
+	mutex.Lock()
+	defer mutex.Unlock()
+	return append([]int(nil), batchSizes...), outputMessages
+}
+
+func TestMiddlewareManager_SplitsBatchWhenByteBudgetIsExceeded(t *testing.T) {
+	// Four 100-byte bodies with a 250-byte budget: two fit per call, a third
+	// would overflow. The message count limit is high enough never to trigger,
+	// so any split has to come from the byte budget.
+	msgs := []messages.Message{
+		{Id: 1, Body: make([]byte, 100)},
+		{Id: 2, Body: make([]byte, 100)},
+		{Id: 3, Body: make([]byte, 100)},
+		{Id: 4, Body: make([]byte, 100)},
+	}
+
+	batchSizes, outputMessages := runManagerCollectingBatchSizes(t, msgs, 10, 250)
+
+	assert.Equal(t, []int{2, 2}, batchSizes, "the batch must be cut before it exceeds the byte budget")
+	// The message that did not fit must be carried over, never dropped.
+	assert.Len(t, outputMessages, 4)
+	assert.Equal(t, []uint64{1, 2, 3, 4}, []uint64{
+		outputMessages[0].Id, outputMessages[1].Id, outputMessages[2].Id, outputMessages[3].Id,
+	})
+}
+
+func TestMiddlewareManager_SendsAMessageBiggerThanTheBudgetOnItsOwn(t *testing.T) {
+	// A single message over the budget cannot be split: it must still go out
+	// alone rather than stall the pipeline.
+	msgs := []messages.Message{
+		{Id: 1, Body: make([]byte, 500)},
+		{Id: 2, Body: make([]byte, 10)},
+	}
+
+	batchSizes, outputMessages := runManagerCollectingBatchSizes(t, msgs, 10, 250)
+
+	assert.Equal(t, []int{1, 1}, batchSizes)
+	assert.Len(t, outputMessages, 2)
+}
+
+func TestMiddlewareManager_ZeroByteBudgetKeepsBatchingByCountOnly(t *testing.T) {
+	// 0 disables the byte budget, so behaviour is the pre-existing one.
+	msgs := []messages.Message{
+		{Id: 1, Body: make([]byte, 100)},
+		{Id: 2, Body: make([]byte, 100)},
+		{Id: 3, Body: make([]byte, 100)},
+	}
+
+	batchSizes, outputMessages := runManagerCollectingBatchSizes(t, msgs, 3, 0)
+
+	assert.Equal(t, []int{3}, batchSizes)
+	assert.Len(t, outputMessages, 3)
+}
+
+func TestMiddlewareManager_DoesNotLoseAPendingMessageOnShutdown(t *testing.T) {
+	// A message held over for the next batch is already out of the input
+	// channel, so the shutdown path is the only thing that can still deliver
+	// it. Losing it here means losing the message outright: nothing has acked
+	// it and nothing will read it again.
+	mockServer := &MockMiddlewareServer{}
+
+	socketPath := "/tmp/test_middleware_" + t.Name() + ".sock"
+	_ = os.Remove(socketPath)
+	lis, err := net.Listen("unix", socketPath)
+	require.NoError(t, err)
+	defer lis.Close()
+	defer os.Remove(socketPath)
+
+	server := grpc.NewServer()
+	proto.RegisterMiddlewareServer(server, mockServer)
+	go func() {
+		_ = server.Serve(lis)
+	}()
+	defer server.Stop()
+
+	inputChan := make(chan messages.Message, 1)
+	outputChan := make(chan messages.Message, 1)
+
+	manager := NewMiddlewareManager(inputChan, outputChan, "unix://"+socketPath, 10, 100*time.Millisecond, time.Second, 250)
+	held := messages.Message{Id: 42, Body: make([]byte, 300)}
+	manager.pending = &held
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	done := make(chan bool)
+	go func() {
+		manager.Start(ctx)
+		done <- true
+	}()
+
+	select {
+	case msg := <-outputChan:
+		assert.Equal(t, uint64(42), msg.Id, "the held message must be delivered on shutdown")
+	case <-time.After(3 * time.Second):
+		t.Fatal("the pending message was never delivered")
+	}
+
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("manager did not stop")
+	}
 }

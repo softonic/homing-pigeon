@@ -491,3 +491,46 @@ func TestNewElasticsearchAdapterDefaultsAckDeleteNotFoundToFalse(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, adapter.(*Elasticsearch).AckDeleteNotFound)
 }
+
+func TestShouldProcessWhenTheByteBudgetIsReachedBeforeTheMessageCount(t *testing.T) {
+	// Elasticsearch rejects a bulk request over http.max_content_length, and
+	// FlushMaxSize alone cannot prevent it: 800 messages of a few hundred KB
+	// each are far past any sane limit. The byte budget has to close the batch
+	// first.
+	es := &Elasticsearch{FlushMaxSize: 800, FlushMaxBytes: 250}
+
+	msgs := []messages.Message{
+		{Id: 1, Body: make([]byte, 100)},
+		{Id: 2, Body: make([]byte, 100)},
+		{Id: 3, Body: make([]byte, 100)},
+	}
+
+	assert.False(t, es.ShouldProcess(msgs[:2]), "200 bytes is still under the budget")
+	assert.True(t, es.ShouldProcess(msgs), "300 bytes is over the budget")
+}
+
+func TestShouldProcessIgnoresTheByteBudgetWhenItIsNotSet(t *testing.T) {
+	es := &Elasticsearch{FlushMaxSize: 2, FlushMaxBytes: 0}
+
+	msgs := []messages.Message{
+		{Id: 1, Body: make([]byte, 10_000)},
+	}
+
+	assert.False(t, es.ShouldProcess(msgs), "with no byte budget only the message count counts")
+}
+
+func TestNewElasticsearchAdapterReadsFlushMaxBytesFromEnv(t *testing.T) {
+	t.Setenv("ELASTICSEARCH_FLUSH_MAX_BYTES", "1234")
+
+	adapter, err := NewElasticsearchAdapter()
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1234, adapter.(*Elasticsearch).FlushMaxBytes)
+}
+
+func TestNewElasticsearchAdapterDefaultsFlushMaxBytesToEightyMegabytes(t *testing.T) {
+	adapter, err := NewElasticsearchAdapter()
+
+	assert.NoError(t, err)
+	assert.Equal(t, 80*1024*1024, adapter.(*Elasticsearch).FlushMaxBytes)
+}

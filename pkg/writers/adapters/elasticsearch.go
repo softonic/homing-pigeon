@@ -17,6 +17,7 @@ import (
 
 type Elasticsearch struct {
 	FlushMaxSize      int
+	FlushMaxBytes     int
 	FlushInterval     time.Duration
 	Bulk              esapi.Bulk
 	AckDeleteNotFound bool
@@ -150,7 +151,28 @@ func (es *Elasticsearch) writeToBuffer(buf *bytes.Buffer, body esAdapter.Elastic
 }
 
 func (es *Elasticsearch) ShouldProcess(msgs []messages.Message) bool {
-	return len(msgs) >= es.FlushMaxSize
+	if len(msgs) >= es.FlushMaxSize {
+		return true
+	}
+	return es.reachedByteBudget(msgs)
+}
+
+// reachedByteBudget reports whether the pending messages already add up to
+// FlushMaxBytes. FlushMaxSize counts messages only, so on its own it cannot
+// keep a bulk request under Elasticsearch's http.max_content_length when the
+// documents are large. A budget of 0 or less disables the check.
+func (es *Elasticsearch) reachedByteBudget(msgs []messages.Message) bool {
+	if es.FlushMaxBytes <= 0 {
+		return false
+	}
+	total := 0
+	for _, msg := range msgs {
+		total += len(msg.Body)
+		if total >= es.FlushMaxBytes {
+			return true
+		}
+	}
+	return false
 }
 
 func (es *Elasticsearch) GetTimeout() time.Duration {
@@ -175,6 +197,14 @@ func NewElasticsearchAdapter() (WriteAdapter, error) {
 		flushMaxIntervalMs = 1000
 	}
 
+	// Bulk requests are also capped by size: Elasticsearch rejects anything
+	// over http.max_content_length (100MB by default) and the whole batch is
+	// then nacked. 0 disables the cap.
+	flushMaxBytes, err := strconv.Atoi(os.Getenv("ELASTICSEARCH_FLUSH_MAX_BYTES"))
+	if err != nil {
+		flushMaxBytes = 80 * 1024 * 1024
+	}
+
 	ackDeleteNotFound, err := strconv.ParseBool(os.Getenv("ELASTICSEARCH_ACK_DELETE_NOT_FOUND"))
 	if err != nil {
 		ackDeleteNotFound = false
@@ -188,6 +218,7 @@ func NewElasticsearchAdapter() (WriteAdapter, error) {
 	}
 	return &Elasticsearch{
 		FlushMaxSize:      flushMaxSize,
+		FlushMaxBytes:     flushMaxBytes,
 		FlushInterval:     time.Duration(flushMaxIntervalMs) * time.Millisecond,
 		Bulk:              es.Bulk,
 		AckDeleteNotFound: ackDeleteNotFound,

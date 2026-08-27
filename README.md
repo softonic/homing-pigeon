@@ -68,7 +68,13 @@ middleware processes the batch, forwards it to the next one through its `OUT_SOC
 listens on `IN_SOCKET`), and returns the final result back up the chain.
 
 Messages are sent in batches of up to `MIDDLEWARE_BATCH_SIZE`, waiting at most
-`MIDDLEWARE_BATCH_TIMEOUT_MS` to fill one.
+`MIDDLEWARE_BATCH_TIMEOUT_MS` to fill one, and never exceeding
+`MIDDLEWARE_BATCH_MAX_BYTES` of message bodies. The byte cap matters because a
+middleware server refuses a gRPC message above its own receive limit — 4MB by
+default in both grpc-go and grpc-js — and the whole batch is nacked when that
+happens, so a handful of large documents is enough to dead letter fifty
+messages. A message that does not fit opens the next batch; a message that on
+its own exceeds the cap is still sent alone, since it cannot be split.
 
 #### The contract
 
@@ -176,6 +182,7 @@ In order to start up correctly, it needs well defined environment variables:
 | WRITE_ADAPTER                 | Write interface implementation. Default: ELASTIC                                                     |
 | MIDDLEWARE_BATCH_SIZE         | Number of messages to send in batch to the middleware (Defaults to 50).                              |
 | MIDDLEWARE_BATCH_TIMEOUT_MS   | Max time to wait until getting a full size batch in milliseconds (Defaults to 100ms).                |
+| MIDDLEWARE_BATCH_MAX_BYTES    | Max total size of the message bodies in a batch, in bytes; keeps the gRPC request under the middleware's receive limit. `0` disables it (Defaults to 3145728, i.e. 3MB). |
 | MIDDLEWARE_CALL_TIMEOUT_MS    | Max time to wait for a middleware call to complete, including waiting for the middleware to become reachable; on expiry the batch is nacked (Defaults to 31000ms). |
 
 ##### Read Adapters
@@ -218,6 +225,7 @@ For more options see [Bulk API reference](https://www.elastic.co/guide/en/elasti
 | ELASTICSEARCH_URL                    | Elasticsearch url string                                           |
 | ELASTICSEARCH_FLUSH_MAX_SIZE         | Elasticsearch flush to bulk API maximum size                       |
 | ELASTICSEARCH_FLUSH_MAX_INTERVAL_MS  | Elasticsearch flush to bulk API max interval time, in milliseconds |
+| ELASTICSEARCH_FLUSH_MAX_BYTES        | Max total size of the message bodies in a bulk request, in bytes; keeps it under Elasticsearch's `http.max_content_length` (100MB by default), which `ELASTICSEARCH_FLUSH_MAX_SIZE` cannot do on its own because it counts messages. `0` disables it (Defaults to 83886080, i.e. 80MB) |
 | ELASTICSEARCH_ACK_DELETE_NOT_FOUND   | When `true`, `delete` bulk items answered with `404`/`not_found` (no `error` object) are acked instead of nacked, since Elasticsearch treats deleting a missing document as an idempotent success. What a nack implies (e.g. dead lettering) remains up to the read adapter. Defaults to `false` |
 
 ### Development

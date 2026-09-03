@@ -54,6 +54,11 @@ func main() {
 	batchSize := helpers.GetIntEnv("MIDDLEWARE_BATCH_SIZE", 50)
 	batchTimeout := time.Duration(helpers.GetIntEnv("MIDDLEWARE_BATCH_TIMEOUT_MS", 100)) * time.Millisecond
 	callTimeout := time.Duration(helpers.GetIntEnv("MIDDLEWARE_CALL_TIMEOUT_MS", 31_000)) * time.Millisecond
+	// Batches are also capped by size: a middleware server refuses a gRPC
+	// message above its own receive limit and the whole batch is then nacked.
+	// The default leaves room under the 4MB that both grpc-go and grpc-js
+	// apply out of the box. 0 disables the cap.
+	batchMaxBytes := helpers.GetIntEnv("MIDDLEWARE_BATCH_MAX_BYTES", 3*1024*1024)
 
 	requestMiddleware := middleware.NewMiddlewareManager(
 		msgChBeforeMiddleware,
@@ -62,6 +67,7 @@ func main() {
 		batchSize,
 		batchTimeout,
 		callTimeout,
+		batchMaxBytes,
 	)
 
 	responseMiddleware := middleware.NewMiddlewareManager(
@@ -71,6 +77,7 @@ func main() {
 		batchSize,
 		batchTimeout,
 		callTimeout,
+		batchMaxBytes,
 	)
 
 	go reader.Start(ctx)
